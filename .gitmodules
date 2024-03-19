@@ -1,0 +1,6 @@
+[submodule "python-nyct-gtfs"]
+	path = python-nyct-gtfs
+	url = https://github.com/Andrew-Dickinson/nyct-gtfs.git
+[submodule "google-transit"]
+	path = google-transit
+	url = https://github.com/google/transit.git
