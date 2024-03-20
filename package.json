@@ -19,6 +19,7 @@
 	"dependencies": {
 		"gtfs-via-postgres": "^4.10.0",
 		"longfn": "^1.3.1",
+		"pg": "^8.11.3",
 		"pino": "^8.19.0",
 		"protobufjs": "^7.2.6"
 	},
