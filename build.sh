@@ -26,3 +26,9 @@ sed -E -i -e 's/import \* as \$protobuf from (.+)/import * as _$protobuf from \1
 
 # make sure the generated file is at least runnable
 node lib/mta-gtfs-realtime.pb.js
+
+curl -fsSL \
+	'https://gist.github.com/derhuerst/745cf09fe5f3ea2569948dd215bbfe1a/raw/25ef9c6f55a4656fee6ee6b77f9b17d9b2569cfb/mirror.mjs' \
+	-H 'User-Agent: mta-gtfs-rt-consolidation-service build script' \
+	-o curl-mirror
+chmod +x curl-mirror

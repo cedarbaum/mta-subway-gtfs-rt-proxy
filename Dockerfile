@@ -32,7 +32,9 @@ LABEL org.opencontainers.image.licenses="ISC"
 WORKDIR /app
 
 # install production-only dependencies
-# RUN apk add --update --no-cache bash wget postgresql-client
+RUN apk add --update --no-cache \
+	moreutils \
+	postgresql-client
 ADD package.json package-lock.json /app
 RUN npm ci --omit dev && npm cache clean --force
 
