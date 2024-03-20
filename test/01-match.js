@@ -40,8 +40,10 @@ after(async () => {
 })
 
 test('matching an N03R TripUpdate works', async (t) => {
+	const now = 1710953000_000
+
 	const tripUpdate = cloneDeep(tripUpdate072350_1_N03R)
-	await matchTripUpdate(tripUpdate)
+	await matchTripUpdate(tripUpdate, {now})
 
 	deepStrictEqual(tripUpdate, {
 		trip: {
@@ -83,5 +85,6 @@ test('matching an N03R TripUpdate works', async (t) => {
 				schedule_relationship: 0,
 			},
 		],
+		delay: 319,
 	})
 })
