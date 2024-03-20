@@ -56,6 +56,9 @@ test('matching an N03R TripUpdate works', async (t) => {
 			},
 			schedule_relationship: 0,
 		},
+		vehicle: {
+			id: '01 1203+ SFT/242'
+		},
 		stop_time_update: [
 			{
 				arrival: {time: 1710953959n, delay: 319},
