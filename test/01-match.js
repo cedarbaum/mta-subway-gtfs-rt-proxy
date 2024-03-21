@@ -4,6 +4,7 @@ import cloneDeep from 'lodash/cloneDeep.js'
 import {
 	stopMatching,
 	matchTripUpdate,
+	matchVehiclePosition,
 } from '../index.js'
 import { deepStrictEqual } from 'node:assert'
 
@@ -33,6 +34,22 @@ const tripUpdate072350_1_N03R = {
 			'.nyct_stop_time_update': { scheduled_track: '4' },
 		},
 	],
+}
+
+const vehiclePosition075150_1_S03R = {
+	trip: {
+		trip_id: '075150_1..S03R',
+		start_date: '20240320',
+		route_id: '1',
+		'.nyct_trip_descriptor': {
+			train_id: '01 1231+ 242/SFT',
+			is_assigned: true,
+			direction: 3
+		},
+	},
+	current_stop_sequence: 17,
+	timestamp: 1710953964n,
+	stop_id: '119S',
 }
 
 after(async () => {
@@ -89,5 +106,30 @@ test('matching an N03R TripUpdate works', async (t) => {
 			},
 		],
 		delay: 319,
+	})
+})
+
+test('matching a S03R VehiclePosition works', async (t) => {
+	const vehiclePosition = cloneDeep(vehiclePosition075150_1_S03R)
+	await matchVehiclePosition(vehiclePosition)
+
+	deepStrictEqual(vehiclePosition, {
+		trip: {
+			trip_id: 'AFA23GEN-1092-Weekday-00_075150_1..S03R',
+			start_date: '20240320',
+			route_id: '1',
+			'.nyct_trip_descriptor': {
+				train_id: '01 1231+ 242/SFT',
+				is_assigned: true,
+				direction: 3
+			},
+			schedule_relationship: 0,
+		},
+		vehicle: {
+			id: '01 1231+ 242/SFT',
+		},
+		current_stop_sequence: 17,
+		timestamp: 1710953964n,
+		stop_id: '119S',
 	})
 })
