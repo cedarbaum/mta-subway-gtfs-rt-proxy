@@ -32,6 +32,53 @@ const {matchAlert} = createMatchAlert({
 	metricsRegister,
 })
 
+const _logger = createLogger('match-feed-message', MATCHING_LOG_LEVEL)
+const _matchingTimeSeconds = new Summary({
+	name: 'feedmessage_matching_time_seconds',
+	help: 'time needed to match an entire FeedMessage with the GTFS Schedule data',
+	registers: [metricsRegister],
+	labelNames: [],
+})
+const matchFeedMessage = async (feedMessage) => {
+	const {
+		header: feedHeader,
+	} = feedMessage
+	const logCtx = {
+		feedHeader,
+	}
+
+	const t0 = performance.now()
+	// todo: match feed entities in parallel?
+	for (let feedEntitiesIdx = 0; feedEntitiesIdx < feedMessage.entity.length; feedEntitiesIdx++) {
+		const feedEntity = feedMessage.entity[feedEntitiesIdx]
+		const _logCtx = {
+			...logCtx,
+			feedEntityId: feedEntity.id,
+		}
+		_logger.trace({
+			..._logCtx,
+			feedEntitiesIdx,
+			feedEntity,
+		}, 'matching FeedEntity')
+
+		if (feedEntity.trip_update) {
+			await matchTripUpdate(feedEntity.trip_update)
+		}
+		if (feedEntity.vehicle) {
+			await matchVehiclePosition(feedEntity.vehicle)
+		}
+		if (feedEntity.alert) {
+			await matchAlert(feedEntity.alert)
+		}
+	}
+	const matchingTime = (performance.now() - t0) / 1000
+	_matchingTimeSeconds.observe(matchingTime)
+	_logger.debug({
+		...logCtx,
+		matchingTime,
+	}, 'matched FeedMessage')
+}
+
 const stopMatching = async () => {
 	await db.end()
 	metricsServer.close()
@@ -41,5 +88,6 @@ export {
 	matchTripUpdate,
 	matchVehiclePosition,
 	matchAlert,
+	matchFeedMessage,
 	stopMatching, // todo: design a better API
 }
