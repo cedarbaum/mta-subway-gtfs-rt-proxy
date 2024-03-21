@@ -5,6 +5,7 @@ import {
 	stopMatching,
 	matchTripUpdate,
 	matchVehiclePosition,
+	matchAlert,
 } from '../index.js'
 import { deepStrictEqual } from 'node:assert'
 
@@ -50,6 +51,36 @@ const vehiclePosition075150_1_S03R = {
 	current_stop_sequence: 17,
 	timestamp: 1710953964n,
 	stop_id: '119S',
+}
+
+const alert0 = {
+	informed_entity: [
+		{
+			trip: {
+				trip_id: '075150_1..S03R',
+				route_id: '1',
+				'.nyct_trip_descriptor': {
+					train_id: '01 1231+ 242/SFT',
+					is_assigned: true,
+				},
+			},
+		},
+		{
+			trip: {
+				trip_id: '072350_1..N03R',
+				route_id: '1',
+				'.nyct_trip_descriptor': {
+					train_id: '01 1203+ SFT/242',
+					is_assigned: true,
+				},
+			},
+		},
+	],
+	header_text: {
+		translation: [
+			{text: 'Train delayed'},
+		],
+	},
 }
 
 after(async () => {
@@ -131,5 +162,42 @@ test('matching a S03R VehiclePosition works', async (t) => {
 		current_stop_sequence: 17,
 		timestamp: 1710953964n,
 		stop_id: '119S',
+	})
+})
+
+test.skip('matching an Alert affecting S03R & N03R works', async (t) => {
+	const alert = cloneDeep(alert0)
+	await matchAlert(alert)
+
+	deepStrictEqual(alert, {
+		informed_entity: [
+			{
+				trip: {
+					trip_id: '075150_1..S03R',
+					start_date: '20240320',
+					route_id: '1',
+					'.nyct_trip_descriptor': {
+						train_id: '01 1231+ 242/SFT',
+						is_assigned: true,
+					},
+				},
+			},
+			{
+				trip: {
+					trip_id: '072350_1..N03R',
+					start_date: '20240320',
+					route_id: '1',
+					'.nyct_trip_descriptor': {
+						train_id: '01 1203+ SFT/242',
+						is_assigned: true,
+					},
+				},
+			},
+		],
+		header_text: {
+			translation: [
+				{text: 'Train delayed'},
+			],
+		},
 	})
 })

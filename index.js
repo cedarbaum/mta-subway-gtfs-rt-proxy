@@ -6,6 +6,7 @@ import {
 } from './lib/metrics.js'
 import {createMatchTripUpdate} from './lib/match-trip-update.js'
 import {createMatchVehiclePosition} from './lib/match-vehicle-position.js'
+import {createMatchAlert} from './lib/match-alert.js'
 
 const MATCHING_LOG_LEVEL = process.env.LOG_LEVEL_MATCHING || 'error'
 
@@ -25,6 +26,11 @@ const {matchVehiclePosition} = createMatchVehiclePosition({
 	logger: createLogger('match-vehicle-position', MATCHING_LOG_LEVEL),
 	metricsRegister,
 })
+const {matchAlert} = createMatchAlert({
+	db,
+	logger: createLogger('match-alert', MATCHING_LOG_LEVEL),
+	metricsRegister,
+})
 
 const stopMatching = async () => {
 	await db.end()
@@ -34,5 +40,6 @@ const stopMatching = async () => {
 export {
 	matchTripUpdate,
 	matchVehiclePosition,
+	matchAlert,
 	stopMatching, // todo: design a better API
 }
