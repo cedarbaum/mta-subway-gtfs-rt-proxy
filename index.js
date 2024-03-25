@@ -79,6 +79,12 @@ const matchFeedMessage = async (feedMessage) => {
 	}, 'matched FeedMessage')
 }
 
+const applyTripReplacementPeriods = createApplyTripReplacementPeriods({
+	db,
+	logger: createLogger('trip-replacement-periods', MATCHING_LOG_LEVEL),
+	metricsRegister,
+})
+
 const stopMatching = async () => {
 	await db.end()
 	metricsServer.close()
@@ -89,5 +95,6 @@ export {
 	matchVehiclePosition,
 	matchAlert,
 	matchFeedMessage,
+	applyTripReplacementPeriods,
 	stopMatching, // todo: design a better API
 }
