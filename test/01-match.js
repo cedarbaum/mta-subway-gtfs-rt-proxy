@@ -294,8 +294,10 @@ test.skip('matching an Alert affecting S03R & N03R works', async (t) => {
 })
 
 test('matching a FeedMessage works', async (t) => {
+	const now = 1710953000_000
+
 	const feedMessage = cloneDeep(feedMessage0)
-	await matchFeedMessage(feedMessage)
+	await matchFeedMessage(feedMessage, {now})
 
 	// assert that matching has succeeded by checking for GTFS Schedule trip IDs
 
