@@ -1,13 +1,7 @@
 import {after, test} from 'node:test'
 import cloneDeep from 'lodash/cloneDeep.js'
-
 import {
-	stopMatching,
-	matchTripUpdate,
-	matchVehiclePosition,
-	matchAlert,
-	matchFeedMessage,
-	applyTripReplacementPeriods,
+	createParseAndProcessFeed,
 } from '../index.js'
 import { deepStrictEqual, strictEqual } from 'node:assert'
 import sortBy from 'lodash/sortBy.js'
@@ -233,8 +227,17 @@ const feedMessage1Matched = {
 	},
 }
 
+const {
+	matchTripUpdate,
+	matchVehiclePosition,
+	matchAlert,
+	matchFeedMessage,
+	applyTripReplacementPeriods,
+	closeConnections,
+} = await createParseAndProcessFeed()
+
 after(async () => {
-	await stopMatching()
+	await closeConnections()
 })
 
 test('matching an N03R TripUpdate works', async (t) => {
