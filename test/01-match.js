@@ -2,7 +2,7 @@ import {after, test} from 'node:test'
 import cloneDeep from 'lodash/cloneDeep.js'
 import {
 	createParseAndProcessFeed,
-} from '../index.js'
+} from '../lib/match.js'
 import { deepStrictEqual, strictEqual } from 'node:assert'
 import sortBy from 'lodash/sortBy.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
