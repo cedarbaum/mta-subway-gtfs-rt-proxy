@@ -4,3 +4,7 @@
 [submodule "google-transit"]
 	path = google-transit
 	url = https://github.com/google/transit.git
+[submodule "postgis-gtfs-importer"]
+	path = postgis-gtfs-importer
+	url = https://github.com/mobidata-bw/postgis-gtfs-importer.git
+	branch = js-api
