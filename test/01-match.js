@@ -9,6 +9,9 @@ import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
 
 const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
+const SCHEDULE_FEED_DIGEST = 'ce8d9c' // first 3 bytes of SHA-256 hash
+const SCHEDULE_FEED_DIGEST_SLICE = SCHEDULE_FEED_DIGEST.slice(0, 1)
+
 const tripUpdate072350_1_N03RScheduleTripId = 'AFA23GEN-1092-Weekday-00_072350_1..N03R'
 const tripUpdate072350_1_N03R = {
 	trip: {
@@ -234,7 +237,10 @@ const {
 	matchFeedMessage,
 	applyTripReplacementPeriods,
 	closeConnections,
-} = await createParseAndProcessFeed()
+} = await createParseAndProcessFeed({
+	scheduleFeedDigest: SCHEDULE_FEED_DIGEST,
+	scheduleFeedDigestSlice: SCHEDULE_FEED_DIGEST_SLICE,
+})
 
 after(async () => {
 	await closeConnections()
