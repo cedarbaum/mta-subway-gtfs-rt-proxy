@@ -3,12 +3,14 @@ import cloneDeep from 'lodash/cloneDeep.js'
 import {
 	createParseAndProcessFeed,
 } from '../lib/match.js'
-import { deepStrictEqual, strictEqual } from 'node:assert'
+import {deepStrictEqual, ok, strictEqual} from 'node:assert'
 import sortBy from 'lodash/sortBy.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
 
 const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
+const SCHEDULE_DB_NAME = process.env.PGDATABASE
+ok(SCHEDULE_DB_NAME, 'SCHEDULE_DB_NAME')
 const SCHEDULE_FEED_DIGEST = 'ce8d9c' // first 3 bytes of SHA-256 hash
 const SCHEDULE_FEED_DIGEST_SLICE = SCHEDULE_FEED_DIGEST.slice(0, 1)
 
@@ -238,6 +240,7 @@ const {
 	applyTripReplacementPeriods,
 	closeConnections,
 } = await createParseAndProcessFeed({
+	scheduleDatabaseName: SCHEDULE_DB_NAME,
 	scheduleFeedDigest: SCHEDULE_FEED_DIGEST,
 	scheduleFeedDigestSlice: SCHEDULE_FEED_DIGEST_SLICE,
 })
