@@ -25,183 +25,190 @@ const createService = async (opt = {}) => {
 
 	const logger = createLogger('service', SERVICE_LOG_LEVEL)
 
-	// todo: iterate over all schedule feeds
-	const [scheduleFeed] = ALL_FEEDS
-	const {
-		scheduleFeedName,
-		scheduleFeedUrl,
-		realtimeFeeds,
-	} = scheduleFeed
+	// ## state
 
-	const logCtx = {
-		scheduleFeedName,
-	}
-
-	// ## fetch of GTFS Realtime feeds
-	// Each realtime feed neeeds only one fetcher, regardless of how many schedule feeds it is matched against.
-
+	// Each realtime feed needs only one fetcher, regardless of how many schedule feeds it is matched against.
 	// realtimeFeedName -> {stopFetching, events}
 	const realtimeFetchersByName = new Map()
 
-	for (const {realtimeFeedName, realtimeFeedUrl} of realtimeFeeds) {
-		logger.debug(logCtx, `setting up realtime feed fetcher for "${realtimeFeedName}"`)
-
-		const {
-			stopFetching,
-			events,
-		} = startFetchingRealtimeFeed({
-			realtimeFeedName,
-			realtimeFeedUrl,
-		})
-
-		realtimeFetchersByName.set(realtimeFeedName, {
-			stopFetching,
-			events,
-		})
-	}
-
-	// ## configure matching & serving of fetched realtime feeds
 	// We set up a nested Map structure below to accomodate the following business logic:
 	// - Each schedule feed has a constantly changing set of versions, each "schedule feed version" identified by its digest (and its database name, which includes the feed digest).
 	// - We match each of the schedule feed's `r` associated realtime feeds against each of the its `v` versions, so we end up with `r * v` "feed handlers".
 	// - Each "feed handler" consists of two functions `matchAndEncodeFeed` & `serveFeed`.
 
-	// todo: after process start it is empty, figure out a solution
 	// scheduleFeedDigest -> {
 	// 	feedHandlers: realtimeFeedName -> {serveFeed, stop},
 	// 	closeConnections,
 	// }
 	const feedHandlersByScheduleFeedDigest = new Map()
 
-	const addScheduleFeedVersion = (scheduleFeedDigest, scheduleDatabaseName) => {
-		const _logCtx = {
-			...logCtx,
-			scheduleFeedDigest,
-			scheduleDatabaseName,
-		}
-		logger.info(_logCtx, `creating new matcher for schedule database "${scheduleDatabaseName}"`)
-
-		// Note: Prometheus stores time series per combination of label values, so having labels with a high or even unbound cardinality is a problem. We still want to be able to tell the schedule databases' metrics apart in the monitoring system, so we add the first hex digit (with a cardinality of 16) of the GTFS Schedule feed's hash as a label.
-		// see also https://www.robustperception.io/cardinality-is-key/
-		const scheduleFeedDigestSlice = scheduleFeedDigest.slice(0, 1)
-
+	const addScheduleFeed = (scheduleFeed) => {
 		const {
-			parseAndProcessFeed: parseAndMatchRealtimeFeed,
-			closeConnections,
-		} = createParseAndProcessFeed({
-			// todo: pass realtimeFeedName through into metrics?
-			scheduleDatabaseName,
-			scheduleFeedDigest,
-			scheduleFeedDigestSlice,
-		})
+			scheduleFeedName,
+			scheduleFeedUrl,
+			realtimeFeeds,
+		} = scheduleFeed
 
-		const createFeedHandler = (realtimeFeedName) => {
-			const __logCtx = {
-				..._logCtx,
-				realtimeFeedName,
-			}
-			logger.debug(__logCtx, 'setting up feed handler')
+		const logCtx = {
+			scheduleFeedName,
+		}
+		
+		// ## fetch of GTFS Realtime feeds
+
+		for (const {realtimeFeedName, realtimeFeedUrl} of realtimeFeeds) {
+			logger.debug(logCtx, `setting up realtime feed fetcher for "${realtimeFeedName}"`)
 
 			const {
-				setFeed: setFeedMessage,
-				onRequest: serveFeedOnRequest,
-			} = serveFeed({
-				scheduleFeedDigest, scheduleFeedDigestSlice,
+				stopFetching,
+				events,
+			} = startFetchingRealtimeFeed({
+				realtimeFeedName,
+				realtimeFeedUrl,
 			})
 
-			const processRealtimeFeed = ({feedEncoded}) => {
-				// todo: trace-log
+			realtimeFetchersByName.set(realtimeFeedName, {
+				stopFetching,
+				events,
+			})
+		}
 
-				(async () => {
-					const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded)
-					setFeedMessage(feedMessage)
-				})()
-				.catch((err) => {
-					logger.warn({
-						...__logCtx,
-						error: err,
-					}, 'failed to process realtime feed update')
-				})
-				// todo: add metrics for success/fail
+		// ## configure matching & serving of fetched realtime feeds
+
+		const addScheduleFeedVersion = (scheduleFeedDigest, scheduleDatabaseName) => {
+			const _logCtx = {
+				...logCtx,
+				scheduleFeedDigest,
+				scheduleDatabaseName,
 			}
+			logger.info(_logCtx, `creating new matcher for schedule database "${scheduleDatabaseName}"`)
 
-			// connect with realtime fetcher
-			ok(realtimeFetchersByName.has(realtimeFeedName), realtimeFeedName)
+			// Note: Prometheus stores time series per combination of label values, so having labels with a high or even unbound cardinality is a problem. We still want to be able to tell the schedule databases' metrics apart in the monitoring system, so we add the first hex digit (with a cardinality of 16) of the GTFS Schedule feed's hash as a label.
+			// see also https://www.robustperception.io/cardinality-is-key/
+			const scheduleFeedDigestSlice = scheduleFeedDigest.slice(0, 1)
+
 			const {
-				events: realtimeFeedEvents,
-			} = realtimeFetchersByName.get(realtimeFeedName)
-			realtimeFeedEvents.on('update', processRealtimeFeed)
-			const stopListeningToRealtimeFeedUpdates = () => {
-				realtimeFeedEvents.removeListener('update', processRealtimeFeed)
-			}
+				parseAndProcessFeed: parseAndMatchRealtimeFeed,
+				closeConnections,
+			} = createParseAndProcessFeed({
+				// todo: pass realtimeFeedName through into metrics?
+				scheduleDatabaseName,
+				scheduleFeedDigest,
+				scheduleFeedDigestSlice,
+			})
 
-			return {
-				serveFeed: serveFeedOnRequest,
-				stop: stopListeningToRealtimeFeedUpdates,
-			}
-		}
-
-		const feedHandlers = new Map()
-		for (const {realtimeFeedName} of realtimeFeeds) {
-			const feedHandler = createFeedHandler(realtimeFeedName)
-			feedHandlers.set(realtimeFeedName, feedHandler)
-		}
-
-		feedHandlersByScheduleFeedDigest.set(scheduleFeedDigest, {
-			feedHandlers,
-			closeConnections,
-		})
-	}
-
-	// todo: isn't this function called only after the database has been (attempted to get) removed? why close client connections then? solving this properly probably needs a rework of postgis-gtfs-importer.
-	const removeScheduleFeedVersion = (scheduleFeedDigest) => {
-		logger.info(logCtx, `removing obsolete matcher for digest "${scheduleFeedDigest}"`)
-
-		const {
-			feedHandlers,
-			closeConnections,
-		} = feedHandlersByScheduleFeedDigest.get(scheduleFeedDigest)
-
-		for (const feedHandler of feedHandlers.values()) {
-			feedHandler.stop()
-		}
-
-		closeConnections()
-		.catch((err) => {
-			logger.warn(logCtx, `failed to closeConnections obsolete matcher for digest "${scheduleFeedDigest}": ${err.message}`)
-			logger.debug(err)
-		})
-
-		feedHandlersByScheduleFeedDigest.delete(scheduleFeedDigest)
-	}
-
-	// ## refreshing of GTFS Schedule feeds
-
-	startRefreshingScheduleFeed({
-		scheduleFeedName,
-		scheduleFeedUrl,
-		onImportDone: ({currentDatabases}) => {
-			logger.trace(logCtx, 'currently imported databases: ' + currentDatabases.map(db => db.name).join(', '))
-
-			for (const oldScheduleFeedDigest of feedHandlersByScheduleFeedDigest.keys()) {
-				if (!currentDatabases.find(({feedDigest}) => feedDigest === oldScheduleFeedDigest)) {
-					logger.trace(logCtx, `removing handlers for obsolete schedule feed version with digest "${oldScheduleFeedDigest}"`)
-					removeScheduleFeedVersion(oldScheduleFeedDigest)
+			const createFeedHandler = (realtimeFeedName) => {
+				const __logCtx = {
+					..._logCtx,
+					realtimeFeedName,
 				}
-			}
+				logger.debug(__logCtx, 'setting up feed handler')
 
-			for (const newScheduleFeedVersion of currentDatabases) {
 				const {
-					name: scheduleDatabaseName,
-					feedDigest: scheduleFeedDigest,
-				} = newScheduleFeedVersion
-				if (!feedHandlersByScheduleFeedDigest.has(scheduleFeedDigest)) {
-					logger.trace(logCtx, `adding handlers for new schedule feed version with digest "${scheduleFeedDigest}"`)
-					addScheduleFeedVersion(scheduleFeedDigest, scheduleDatabaseName)
+					setFeed: setFeedMessage,
+					onRequest: serveFeedOnRequest,
+				} = serveFeed({
+					scheduleFeedDigest, scheduleFeedDigestSlice,
+				})
+
+				const processRealtimeFeed = ({feedEncoded}) => {
+					// todo: trace-log
+
+					(async () => {
+						const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded)
+						setFeedMessage(feedMessage)
+					})()
+					.catch((err) => {
+						logger.warn({
+							...__logCtx,
+							error: err,
+						}, 'failed to process realtime feed update')
+					})
+					// todo: add metrics for success/fail
+				}
+
+				// connect with realtime fetcher
+				ok(realtimeFetchersByName.has(realtimeFeedName), realtimeFeedName)
+				const {
+					events: realtimeFeedEvents,
+				} = realtimeFetchersByName.get(realtimeFeedName)
+				realtimeFeedEvents.on('update', processRealtimeFeed)
+				const stopListeningToRealtimeFeedUpdates = () => {
+					realtimeFeedEvents.removeListener('update', processRealtimeFeed)
+				}
+
+				return {
+					serveFeed: serveFeedOnRequest,
+					stop: stopListeningToRealtimeFeedUpdates,
 				}
 			}
-		},
-	})
+
+			const feedHandlers = new Map()
+			for (const {realtimeFeedName} of realtimeFeeds) {
+				const feedHandler = createFeedHandler(realtimeFeedName)
+				feedHandlers.set(realtimeFeedName, feedHandler)
+			}
+
+			feedHandlersByScheduleFeedDigest.set(scheduleFeedDigest, {
+				feedHandlers,
+				closeConnections,
+			})
+		}
+
+		// todo: isn't this function called only after the database has been (attempted to get) removed? why close client connections then? solving this properly probably needs a rework of postgis-gtfs-importer.
+		const removeScheduleFeedVersion = (scheduleFeedDigest) => {
+			logger.info(logCtx, `removing obsolete matcher for digest "${scheduleFeedDigest}"`)
+
+			const {
+				feedHandlers,
+				closeConnections,
+			} = feedHandlersByScheduleFeedDigest.get(scheduleFeedDigest)
+
+			for (const feedHandler of feedHandlers.values()) {
+				feedHandler.stop()
+			}
+
+			closeConnections()
+			.catch((err) => {
+				logger.warn(logCtx, `failed to closeConnections obsolete matcher for digest "${scheduleFeedDigest}": ${err.message}`)
+				logger.debug(err)
+			})
+
+			feedHandlersByScheduleFeedDigest.delete(scheduleFeedDigest)
+		}
+
+		// ## refreshing of GTFS Schedule feeds
+		// todo: after process start `feedHandlersByScheduleFeedDigest` is empty, figure out a solution
+
+		startRefreshingScheduleFeed({
+			scheduleFeedName,
+			scheduleFeedUrl,
+			onImportDone: ({currentDatabases}) => {
+				logger.trace(logCtx, 'currently imported databases: ' + currentDatabases.map(db => db.name).join(', '))
+
+				for (const oldScheduleFeedDigest of feedHandlersByScheduleFeedDigest.keys()) {
+					if (!currentDatabases.find(({feedDigest}) => feedDigest === oldScheduleFeedDigest)) {
+						logger.trace(logCtx, `removing handlers for obsolete schedule feed version with digest "${oldScheduleFeedDigest}"`)
+						removeScheduleFeedVersion(oldScheduleFeedDigest)
+					}
+				}
+
+				for (const newScheduleFeedVersion of currentDatabases) {
+					const {
+						name: scheduleDatabaseName,
+						feedDigest: scheduleFeedDigest,
+					} = newScheduleFeedVersion
+					if (!feedHandlersByScheduleFeedDigest.has(scheduleFeedDigest)) {
+						logger.trace(logCtx, `adding handlers for new schedule feed version with digest "${scheduleFeedDigest}"`)
+						addScheduleFeedVersion(scheduleFeedDigest, scheduleDatabaseName)
+					}
+				}
+			},
+		})
+	}
+
+	for (const scheduleFeed of ALL_FEEDS) {
+		addScheduleFeed(scheduleFeed)
+	}
 
 	// ## serve matched realtime feeds via HTTP
 
