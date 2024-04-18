@@ -6,6 +6,7 @@ WORKDIR /app
 # install build dependencies
 RUN apk add --update --no-cache \
 	bash \
+	curl \
 	git
 ADD package.json package-lock.json /app/
 RUN npm ci
@@ -31,17 +32,30 @@ LABEL org.opencontainers.image.licenses="ISC"
 
 WORKDIR /app
 
-# install production-only dependencies
+# install tools
+# - bash, ncurses (tput), moreutils (sponge), postgresql-client (psql) & zstd are required by postgis-gtfs-importer.
+# - curl is required by curl-mirror, which is required by postgis-gtfs-importer.
 RUN apk add --update --no-cache \
+	bash \
+	curl \
+	ncurses \
 	moreutils \
-	postgresql-client
+	postgresql-client \
+	zstd
+COPY --from=builder /app/curl-mirror ./
+RUN ln -s $PWD/curl-mirror /usr/local/bin/curl-mirror && curl-mirror --help >/dev/null
+
+ADD --link postgis-gtfs-importer ./postgis-gtfs-importer
+
+# install npm dependencies
+RUN cd postgis-gtfs-importer && npm install --omit dev && npm cache clean --force
 ADD package.json package-lock.json /app
 RUN npm ci --omit dev && npm cache clean --force
 
 # add source code
 # todo: exclude google-transit & python-nyct-gtfs, using `syntax=docker/dockerfile:1.7-labs` & --exclude
 # --exclude google-transit --exclude python-nyct-gtfs
-ADD . /app
+ADD --link . /app
 COPY --from=builder \
 	/app/lib/gtfs-realtime.proto /app/lib/mta-gtfs-realtime.proto /app/lib/mta-gtfs-realtime.pb.js \
 	./lib/

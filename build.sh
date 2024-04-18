@@ -2,7 +2,6 @@
 
 set -euo pipefail
 cd "$(dirname "$(realpath "$0")")"
-
 set -x
 
 mkdir -p lib
