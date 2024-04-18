@@ -12,6 +12,6 @@ node_modules
 /lib/mta-gtfs-realtime.proto
 /lib/gtfs-realtime.proto
 /lib/mta-gtfs-realtime.pb.js
-/curl-mirror
+/curl-mirror.mjs
 
 /test

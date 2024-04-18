@@ -42,8 +42,8 @@ RUN apk add --update --no-cache \
 	moreutils \
 	postgresql-client \
 	zstd
-COPY --from=builder /app/curl-mirror ./
-RUN ln -s $PWD/curl-mirror /usr/local/bin/curl-mirror && curl-mirror --help >/dev/null
+COPY --from=builder /app/curl-mirror.mjs ./
+RUN ln -s $PWD/curl-mirror.mjs /usr/local/bin/curl-mirror && curl-mirror --help >/dev/null
 
 ADD --link postgis-gtfs-importer ./postgis-gtfs-importer
 
