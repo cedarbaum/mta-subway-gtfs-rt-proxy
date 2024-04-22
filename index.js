@@ -21,7 +21,6 @@ const createService = async (opt = {}) => {
 	}
 
 	const metricsServer = createMetricsServer()
-	await metricsServer.start()
 
 	const logger = createLogger('service', SERVICE_LOG_LEVEL)
 
@@ -110,9 +109,12 @@ const createService = async (opt = {}) => {
 			})
 
 			const processRealtimeFeed = ({feedEncoded}) => {
-				// todo: trace-log
+				logger.trace({
+					...__logCtx,
+					feedEncoded,
+				}, 'processing realtime feed')
 
-				(async () => {
+				;(async () => {
 					const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded)
 					setFeedMessage(feedMessage)
 				})()
@@ -262,6 +264,9 @@ const createService = async (opt = {}) => {
 		})
 	})
 	logger.info(`listening on port ${server.address().port}`)
+
+	await metricsServer.start()
+	logger.info(`metrics server listening on port ${metricsServer.address().port}`)
 
 	const stopService = async () => {
 		// todo: info-log
