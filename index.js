@@ -40,14 +40,14 @@ const createService = async (opt = {}) => {
 	// ## fetch of GTFS Realtime feeds
 	// Each realtime feed neeeds only one fetcher, regardless of how many schedule feeds it is matched against.
 
-	// realtimeFeedName -> {stopFetching, events}
+	// realtimeFeedName -> {abortFetching, events}
 	const realtimeFetchersByName = new Map()
 
 	for (const {realtimeFeedName, realtimeFeedUrl} of realtimeFeeds) {
 		logger.debug(logCtx, `setting up realtime feed fetcher for "${realtimeFeedName}"`)
 
 		const {
-			stopFetching,
+			abortFetching,
 			events,
 		} = startFetchingRealtimeFeed({
 			realtimeFeedName,
@@ -55,7 +55,7 @@ const createService = async (opt = {}) => {
 		})
 
 		realtimeFetchersByName.set(realtimeFeedName, {
-			stopFetching,
+			abortFetching,
 			events,
 		})
 	}
