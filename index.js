@@ -262,6 +262,21 @@ const createService = async (opt = {}) => {
 		})
 	})
 	logger.info(`listening on port ${server.address().port}`)
+
+	const stopService = async () => {
+		// todo: info-log
+		for (const {abortFetching} of realtimeFetchersByName.values()) {
+			await abortFetching()
+		}
+		for (const {closeConnections} of feedHandlersByScheduleFeedDigest.values()) {
+			await closeConnections()
+		}
+		server.close()
+	}
+
+	return {
+		stopService,
+	}
 }
 
 export {
