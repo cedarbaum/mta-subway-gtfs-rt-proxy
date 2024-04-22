@@ -29,9 +29,11 @@
 	},
 	"devDependencies": {
 		"eslint": "^8.0.0",
+		"execa": "^8.0.1",
 		"lodash": "^4.17.21",
 		"pino-pretty": "^11.0.0",
-		"protobufjs-cli": "^1.1.2"
+		"protobufjs-cli": "^1.1.2",
+		"sample-gtfs-feed": "^0.11.2"
 	},
 	"scripts": {
 		"test": "./test/index.sh",

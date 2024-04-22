@@ -18,4 +18,8 @@ NODE_ENV=production npm exec -- gtfs-to-sql \
 	mta-2024-03-18.gtfs/*.txt \
 	| sponge | psql -b
 
-node --test *.js
+node --test 01-match.js
+
+export PGDATABASE=test
+./02-service-prepare.sh
+node --test 02-service.js
