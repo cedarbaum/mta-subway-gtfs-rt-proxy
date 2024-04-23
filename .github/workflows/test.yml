@@ -18,12 +18,16 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v4
+      with:
+        submodules: true
     - name: setup Node v${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+
     - run: npm install
+    - run: cd postgis-gtfs-importer && npm install --production
 
     - run: npm run lint
 
