@@ -197,6 +197,33 @@ const feedMessage0 = {
 		},
 	],
 }
+const feedMessage1 = {
+	...feedMessage0,
+	header: {
+		...feedMessage0.header,
+		timestamp: feedMessage0.header.timestamp + 14, // 2019-05-07T15:30:52+02:00
+	},
+	entity: [
+		{
+			id: 'three',
+			trip_update: {
+				...tripUpdate1,
+				stop_time_update: [
+					// we omit the 0th item
+					{
+						...tripUpdate1.stop_time_update[1],
+						departure: {
+							// 2019-05-07T18:22:58+02:00
+							time: tripUpdate1.stop_time_update[1].departure.time + 33,
+						},
+					},
+					...tripUpdate1.stop_time_update.slice(2),
+				],
+			},
+		},
+		...feedMessage0.entity.slice(1),
+	],
+}
 
 beforeEach(createTestDbs)
 afterEach(purgeTestDbs)
@@ -344,6 +371,39 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
 			// imported again because the Schedule feed's digest has changed
 			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
+
+			checkMatchingSuccessesAndFailures(metrics)
+		}
+
+		// modify realtime feed, check matching with BAR_FEED again
+		setRealtimeFeed(encodeFeedMessage(feedMessage1))
+		// todo: trigger & get notified about realtime fetching instead of waiting
+		await new Promise(r => setTimeout(r, 2_000))
+		{
+			const {
+				header: feedHeader,
+				entity: feedEntities,
+			} = await fetchAndParseMatchedRealtimeFeed({port, realtimeFeedName, scheduleFeedDigest})
+			strictEqual(
+				feedEntities[0]?.trip_update?.trip?.trip_id?.slice(0, BAR_TRIP_ID_PREFIX.length),
+				BAR_TRIP_ID_PREFIX,
+				`TripUpdate's (feedMessage.entity[0].trip_update) trip_id should begin with "${BAR_TRIP_ID_PREFIX}"`,
+			)
+			strictEqual(
+				feedEntities[1]?.vehicle?.trip?.trip_id?.slice(0, BAR_TRIP_ID_PREFIX.length),
+				BAR_TRIP_ID_PREFIX,
+				`VehiclePosition's (feedMessage.entity[1].vehicle) trip_id should begin with "${BAR_TRIP_ID_PREFIX}"`,
+			)
+			console.info('Realtime feed (feedMessage1) matched against BAR_FEED looks good ✔︎')
+
+			const metrics = await fetchAndParseMetrics({
+				port: metricsPort,
+			})
+
+			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			.find(({labels: l}) => l.feed_name === scheduleFeedName)
+			// not imported again because the Schedule feed's digest hasn't changed
+			strictEqual(scheduleFeedImported?.value, 0, 'schedule_feed_imported_boolean should be 0')
 
 			checkMatchingSuccessesAndFailures(metrics)
 		}
