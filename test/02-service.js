@@ -2,9 +2,10 @@ import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {createServer} from 'node:http'
 import ky from 'ky'
+import {getMetricsFromIterator as parseMetricsFromIterator} from 'prom2javascript'
 import {beforeEach, afterEach, test} from 'node:test'
 import {execa} from 'execa';
-import {strictEqual} from 'node:assert'
+import {ok, strictEqual} from 'node:assert'
 import {promisify} from 'node:util'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
 import {encodeFeedMessage} from '../lib/serve-gtfs-rt.js'
@@ -80,6 +81,21 @@ const fetchAndParseMatchedRealtimeFeed = async (cfg) => {
 	return feedMessage
 }
 
+const fetchAndParseMetrics = async (cfg) => {
+	const {
+		port,
+	} = cfg
+	const res = await ky(`http://localhost:${port}/metrics`, {
+		redirect: 'follow',
+		retry: 0,
+	})
+	let metricsEncoded = await res.text()
+
+	metricsEncoded = metricsEncoded.split(/\r?\n/)
+	const metrics = await parseMetricsFromIterator(metricsEncoded[Symbol.iterator]())
+	return metrics
+}
+
 const SCHEDULE_FEED_BOOKKEEPING_DB_NAME = `test_${Math.random().toString(16).slice(2, 4)}`
 const SCHEDULE_FEED_DB_NAME_PREFIX = SCHEDULE_FEED_BOOKKEEPING_DB_NAME + '_'
 
@@ -108,6 +124,15 @@ const purgeTestDbs = async () => {
 	}
 
 	await promisify(db.end.bind(db))()
+}
+
+const assertMoreMatchingSuccessesThanFailures = (successesName, successes, failuresName, failures, filterFn) => {
+	const _successes = successes.data.find(filterFn)
+	const _failures = failures.data.find(filterFn)
+	ok(
+		(_successes?.value || 0) > (_failures?.value || 0),
+		`${successesName} (${_successes?.value}) should be > ${failuresName} ${_failures?.value}`,
+	)
 }
 
 const tripUpdate1 = {
@@ -197,6 +222,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		stop: stopServingScheduleFeed,
 		setFile: setScheduleFeed,
 	} = await serveFile('gtfs.zip')
+	const scheduleFeedName = 'nyct_subway' // currently hard-coded by lib/feeds.js
 	env.NYCT_SUBWAY_SCHEDULE_FEED_URL = `http://localhost:${scheduleFeedPort}/gtfs.zip`
 
 	const {
@@ -207,6 +233,35 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 	const realtimeFeedName = 'nyct_subway_1234567' // currently hard-coded by lib/feeds.js
 	env.NYCT_SUBWAY_1234567_REALTIME_FEED_URL = `http://localhost:${realtimeFeedPort}/gtfs-rt.pb`
 	env.NYCT_SUBWAY_ACE_REALTIME_FEED_URL = '-' // disable
+
+	const checkMatchingSuccessesAndFailures = (metrics) => {
+		const {
+			tripupdates_matching_successes_total,
+			tripupdates_matching_failures_total,
+			vehiclepositions_matching_successes_total,
+			vehiclepositions_matching_failures_total,
+		} = metrics
+		assertMoreMatchingSuccessesThanFailures(
+			'tripupdates_matching_successes_total',
+			tripupdates_matching_successes_total,
+			'tripupdates_matching_failures_total',
+			tripupdates_matching_failures_total,
+			({labels: {schedule_feed_digest: sched_digest, route_id}}) => (
+				sched_digest === scheduleFeedDigest.slice(0, sched_digest.length)
+				&& route_id === tripUpdate1.trip.route_id
+			),
+		)
+		assertMoreMatchingSuccessesThanFailures(
+			'vehiclepositions_matching_successes_total',
+			vehiclepositions_matching_successes_total,
+			'vehiclepositions_matching_failures_total',
+			vehiclepositions_matching_failures_total,
+			({labels: {schedule_feed_digest: sched_digest, route_id}}) => (
+				sched_digest === scheduleFeedDigest.slice(0, sched_digest.length)
+				&& route_id === vehiclePosition1.trip.route_id
+			),
+		)
+	}
 
 	setScheduleFeed(FOO_FEED)
 	let scheduleFeedDigest = FOO_FEED_DIGEST
@@ -246,8 +301,18 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 				`VehiclePosition's (feedMessage.entity[1].vehicle) trip_id should begin with "${FOO_TRIP_ID_PREFIX}"`,
 			)
 			console.info('Realtime feed (feedMessage0) matched against FOO_FEED looks good ✔︎')
+
+			const metrics = await fetchAndParseMetrics({
+				port: metricsPort,
+			})
+
+			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			.find(({labels: l}) => l.feed_name === scheduleFeedName)
+			// imported for the first time
+			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
+
+			checkMatchingSuccessesAndFailures(metrics)
 		}
-		// todo: fetch & check metrics?
 
 		// check matching with BAR_FEED
 		setScheduleFeed(BAR_FEED)
@@ -270,8 +335,18 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 				`VehiclePosition's (feedMessage.entity[1].vehicle) trip_id should begin with "${BAR_TRIP_ID_PREFIX}"`,
 			)
 			console.info('Realtime feed (feedMessage0) matched against BAR_FEED looks good ✔︎')
+
+			const metrics = await fetchAndParseMetrics({
+				port: metricsPort,
+			})
+
+			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			.find(({labels: l}) => l.feed_name === scheduleFeedName)
+			// imported again because the Schedule feed's digest has changed
+			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
+
+			checkMatchingSuccessesAndFailures(metrics)
 		}
-		// todo: fetch & check metrics?
 
 		pServiceProcess.kill()
 	})()
