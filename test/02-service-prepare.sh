@@ -1,7 +1,4 @@
-#!/bin/bash
-
 set -euo pipefail
-cd "$(dirname "$(realpath "$0")")"
 
 path_to_sample_gtfs_feed="$(dirname "$(node -p 'require.resolve("sample-gtfs-feed/gtfs/trips.txt")')")"
 
