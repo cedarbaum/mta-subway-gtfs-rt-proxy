@@ -26,4 +26,50 @@ jobs:
     - run: npm install
 
     - run: npm run lint
-    - run: npm test
+
+    - name: install prerequisites
+      # - curl, jq, unzip & wget are needed for the qsv download script below
+      # - moreutils provides sponge, which is needed by postgis-gtfs-importer & test/02-service-prepare.sh
+      run: |
+        sudo apt install -y \
+          curl \
+          jq \
+          moreutils \
+          unzip \
+          wget
+    - name: install qsv
+      # see also https://api.github.com/repos/jqnatividad/qsv/releases
+      run: |
+        set -eu -o pipefail
+        ua='mta-gtfs-rt-consolidation-service CI'
+        assets="$(curl 'https://api.github.com/repos/jqnatividad/qsv/releases/latest' -H "User-Agent: $ua" -fsSL | jq -rc '.assets')"
+        set -x
+        zip_url="$(echo "$assets" | jq -rc '.[] | [.name, .browser_download_url]' | grep -i Linux | grep "$(uname -m)" | head -n 1 | jq -rc '.[1]')"
+        wget -nv -U "$ua" -O /tmp/qsv.zip "$zip_url"
+        unzip -n -d /usr/local/bin /tmp/qsv.zip qsv
+        chmod +x /usr/local/bin/qsv
+        qsv --version
+    - name: start PostgreSQL with PostGIS
+      run: |
+        docker run -d -q \
+          -e POSTGRES_USER=$PGUSER -e POSTGRES_PASSWORD=$PGPASSWORD -e POSTGRES_DB=$PGDATABASE \
+          -p 5432:5432 postgis/postgis:14-3.4-alpine
+      env:
+        PGUSER: postgres
+        PGPASSWORD: password
+        PGDATABASE: postgres
+
+    - run: npm run build
+    - name: install curl-mirror script
+      run: |
+        set -eux -o pipefail
+        ln -s $PWD/curl-mirror.mjs /usr/local/bin/curl-mirror
+        curl-mirror --help
+
+    - name: run tests
+      run: sleep 5 && npm test
+      env:
+        PGHOST: localhost
+        PGPORT: '5432'
+        PGUSER: postgres
+        PGPASSWORD: password
