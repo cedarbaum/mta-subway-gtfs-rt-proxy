@@ -21,3 +21,7 @@ NODE_ENV=production gtfs-to-sql \
 	--trips-without-shape-id --routes-without-agency-id -- \
 	mta-2024-03-18.gtfs/*.txt \
 	| sponge | env "PGDATABASE=$db_name" psql -b
+
+for file in ../lib/sql.d/*; do
+	env "PGDATABASE=$db_name" psql -b -1 -v 'ON_ERROR_STOP=1' -f "$file"
+done

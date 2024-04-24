@@ -1,3 +1,4 @@
+import {promisify} from 'node:util'
 import {after, test} from 'node:test'
 import cloneDeep from 'lodash/cloneDeep.js'
 import {
@@ -6,6 +7,7 @@ import {
 import {deepStrictEqual, ok, strictEqual} from 'node:assert'
 import sortBy from 'lodash/sortBy.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
+import {connectToPostgres} from '../lib/db.js'
 
 const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
@@ -235,13 +237,26 @@ const feedMessage1Matched = {
 	},
 }
 
+const queryDbOnce = async (...queryArgs) => {
+	const db = connectToPostgres()
+	try {
+		return await db.query(...queryArgs)
+	} finally {
+		await promisify(db.end.bind(db))()
+	}
+}
+const clearPreviousStopTimeUpdatesDb = async () => {
+	await queryDbOnce(`TRUNCATE TABLE previous_stoptimeupdates`)
+}
+
 const {
 	matchTripUpdate,
 	matchVehiclePosition,
 	matchAlert,
 	matchFeedMessage,
+	storeStopTimeUpdatesInDb,
 	applyTripReplacementPeriods,
-	closeConnections,
+	stop: stopMatching,
 } = await createParseAndProcessFeed({
 	scheduleDatabaseName: SCHEDULE_DB_NAME,
 	scheduleFeedDigest: SCHEDULE_FEED_DIGEST,
@@ -249,7 +264,7 @@ const {
 })
 
 after(async () => {
-	await closeConnections()
+	await stopMatching()
 })
 
 test('matching an N03R TripUpdate works', async (t) => {
@@ -357,6 +372,57 @@ test('matching a FeedMessage works', async (t) => {
 	// 		'feedMessage.entity[2].alert.informed_entity[1].trip.trip_id',
 	// 	)
 	// }
+})
+
+test('storing current & restoring previous StopTimeUpdates works', async (t) => {
+	await clearPreviousStopTimeUpdatesDb()
+	try {
+		// 1. store TripUpdate's StopTimeUpdates in the DB
+		{
+			// todo: test with FeedMessage with >1 TripUpdate
+			const feedMessage = cloneDeep(feedMessage0)
+			await storeStopTimeUpdatesInDb(feedMessage)
+
+			// todo
+			// We expect only the (single) TripUpdate (0th feed entity) to be in here, as restoring StopTimeUpdates only makes sense for TripUpdates.
+			const bigintToNumber = bi => parseInt(String(bi), 10)
+			const expectedStopTimeUpdates = tripUpdate072350_1_N03R.stop_time_update.map((sTU) => ({
+				stop_id: sTU.stop_id,
+				timestamp: bigintToNumber(feedMessage0.header.timestamp),
+				arrival_time: bigintToNumber(sTU.arrival.time),
+				arrival_delay: null, // we didn't provide this before
+				departure_time: sTU.departure?.time ? bigintToNumber(sTU.departure.time) : null,
+				departure_delay: null, // we didn't provide this before
+			}))
+			const {
+				rows: storedStopTimeUpdates,
+			} = await queryDbOnce(`\
+				SELECT
+					stop_id,
+					timestamp,
+					arrival_time,
+					arrival_delay,
+					departure_time,
+					departure_delay
+				FROM previous_stoptimeupdates
+				WHERE trip_id = $1
+				AND start_date = $2
+				ORDER BY stop_id
+			`, [
+				tripUpdate072350_1_N03R.trip.trip_id,
+				tripUpdate072350_1_N03R.trip.start_date,
+			])
+			deepStrictEqual(
+				storedStopTimeUpdates,
+				sortBy(expectedStopTimeUpdates, ({stop_id}) => stop_id),
+				'stored StopTimeUpdates seem wrong',
+			)
+		}
+
+		// todo: match TU with STUs missing some realtime data, check if restored from the DB
+	} finally {
+		await clearPreviousStopTimeUpdatesDb()
+	}
 })
 
 test('applying FeedReplacementPeriods works', async (t) => {
