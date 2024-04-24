@@ -65,6 +65,7 @@ const tripUpdate072350_1_N03RMatched = {
 				delay: 319,
 			},
 			schedule_relationship: 0,
+			stop_sequence: 36,
 		},
 		{
 			...tripUpdate072350_1_N03R.stop_time_update[1],
@@ -77,6 +78,7 @@ const tripUpdate072350_1_N03RMatched = {
 				delay: 319,
 			},
 			schedule_relationship: 0,
+			stop_sequence: 37,
 		},
 		{
 			...tripUpdate072350_1_N03R.stop_time_update[2],
@@ -85,6 +87,7 @@ const tripUpdate072350_1_N03RMatched = {
 				delay: 319,
 			},
 			schedule_relationship: 0,
+			stop_sequence: 38,
 		},
 	],
 	delay: 319,
