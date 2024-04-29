@@ -261,6 +261,16 @@ test('matching an N03R TripUpdate works', async (t) => {
 	deepStrictEqual(tripUpdate, tripUpdate072350_1_N03RMatched)
 })
 
+test('matching N03R TripUpdate still happens if it has the Schedule trip_id', async (t) => {
+	const now = 1710953000_000
+
+	const tripUpdate = cloneDeep(tripUpdate072350_1_N03R)
+	tripUpdate.trip.trip_id = tripUpdate072350_1_N03RScheduleTripId
+	await matchTripUpdate(tripUpdate, {now})
+
+	deepStrictEqual(tripUpdate, tripUpdate072350_1_N03RMatched)
+})
+
 test('matching a S03R VehiclePosition works', async (t) => {
 	const vehiclePosition = cloneDeep(vehiclePosition075150_1_S03R)
 	await matchVehiclePosition(vehiclePosition)
