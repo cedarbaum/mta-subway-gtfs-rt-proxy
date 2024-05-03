@@ -2,12 +2,6 @@
 
 **An HTTP service that consolidates and normalizes the [MTA (NYCT)](https://en.wikipedia.org/wiki/New_York_City_Transit_Authority) [GTFS-Realtime (GTFS-RT)](https://gtfs.org/realtime/) [feeds](https://api.mta.info/).**
 
-[![npm version](https://img.shields.io/npm/v/mta-gtfs-rt-consolidation-service.svg)](https://www.npmjs.com/package/mta-gtfs-rt-consolidation-service)
-![ISC-licensed](https://img.shields.io/github/license/derhuerst/mta-gtfs-rt-consolidation-service.svg)
-![minimum Node.js version](https://img.shields.io/node/v/mta-gtfs-rt-consolidation-service.svg)
-[![support me via GitHub Sponsors](https://img.shields.io/badge/support%20me-donate-fa7664.svg)](https://github.com/sponsors/derhuerst)
-[![chat with me on Twitter](https://img.shields.io/badge/chat%20with%20me-on%20Twitter-1da1f2.svg)](https://twitter.com/derhuerst)
-
 
 ## How it works
 
@@ -53,12 +47,13 @@ This is why the **processing steps described above happen for *each* Realtime fe
 
 > [!NOTE]
 > This service currently only handles the `1` Subway Schedule feed (and its corresponding `r` Realtime feeds). It *does not* process MTA's other `s` Schedule feeds (Manhattan buses, Long Island Rail Road, etc.). So there are only `1 * r` instead of `s * r` Realtime/Schedule pairs.
+> [PR #1 adds support for >1 Schedule feeds](https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy/pull/1).
 
 ### Multiple feed versions
 
 MTA/NYCT publish a new "version" of each Schedule feed from time to time, with a timing that we have no control over.
 
-Because we also *cannot* coordinate when both this service *and its consumers* switch to the latest *version*, **a period of time occurs during which this service still has the previous/old *version* while the consumer already has the latest**, or vice versa. Some consumers might also deploy their systems in a [blue-green fashion](https://en.wikipedia.org/wiki/Blue–green_deployment), in which case the would require *matched* Realtime feeds for >1 Schedule feed *versions* simultaneously.
+Because we also *cannot* coordinate when both this service *and its consumers* switch to the latest *version*, **a period of time occurs during which this service still has the previous/old *version* while the consumer already has the latest**, or vice versa. Some consumers might also deploy their systems in a [blue-green fashion](https://en.wikipedia.org/wiki/Blue–green_deployment), in which case they would require *matched* Realtime feeds for >1 Schedule feed *versions* simultaneously.
 
 However, **a Realtime feed is only ever compatible with *one* Schedule feed *version***, because the agency/route/trip IDs need to match. This is why we also **support multiple *versions* of the Schedule feed simultaneously**, allowing each consumer's instance to request the Realtime feed it can process.
 
@@ -79,3 +74,8 @@ npm install derhuerst/mta-gtfs-rt-consolidation-service
 ```js
 // todo
 ```
+
+
+## Related
+
+- [`nyct_gtfs` Python library](https://github.com/Andrew-Dickinson/nyct-gtfs) – Real-time NYC subway data parsing for humans
