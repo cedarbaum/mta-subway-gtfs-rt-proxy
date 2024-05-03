@@ -21,6 +21,14 @@ However, they deviate from the spec in two significant ways:
 
 This service fetches the GTFS Realtime feed periodically and processes it as described below in detail, so that **consumers (e.g. [OpenTripPlanner](https://opentripplanner.org)) can process the resulting transformed feed as-is**, without MTA-specific customizations.
 
+### 0. Restoring of past `StopTimeUpdate`s
+
+MTA's GTFS Realtime API omits a `StopTimeUpdate` from a `TripUpdate` as soon as it is in the past (as in: the train/"run" has left the stop). While the specification allows this – it says that "it is possible, although inconsequential, to also provide updates for preceding stops" –, such behavior requires consumers that want to show the entire trip's state to the user to store the latest known realtime data for each `StopTimeUpdate`.
+
+On behalf of the consumers, **this service "restores" previously seen (usually past) `StopTimeUpdate`s** by, whenever the Realtime feed is processed, simultaneously:
+- writing all current `StopTimeUpdate`s into a database table, along with the `stop_id` and their `TripUpdate`'s `trip_id` & `start_date`, to be used in a later.
+- querying previously stored ("seen") `StopTimeUpdate`s that match the feed (again using `stop_id`, `trip_id` & `start_date`), and adding filling in the `TripUpdate`'s `StopTimeUpdate`s, so that includes even those in the past.
+
 ### 1. Matching
 
 While the Realtime feed's `trip_id`s do not match with those in the Schedule feed, together with the `route_id` and `start_date`, we can uniquely identify the train/"run" of the trip in the Schedule data in almost all cases.

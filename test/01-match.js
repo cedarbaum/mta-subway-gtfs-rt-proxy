@@ -8,6 +8,7 @@ import {deepStrictEqual, ok, strictEqual} from 'node:assert'
 import sortBy from 'lodash/sortBy.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
 import {connectToPostgres} from '../lib/db.js'
+import {_restoreStopTimeUpdate} from '../lib/restore-stoptimeupdates.js'
 
 const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
@@ -255,6 +256,7 @@ const {
 	matchAlert,
 	matchFeedMessage,
 	storeStopTimeUpdatesInDb,
+	restoreStopTimeUpdatesFromDb,
 	applyTripReplacementPeriods,
 	stop: stopMatching,
 } = await createParseAndProcessFeed({
@@ -374,6 +376,115 @@ test('matching a FeedMessage works', async (t) => {
 	// }
 })
 
+test('StopTimeUpdates restoring logic works', (t) => {
+	const timestamp = 1234567n
+	const _stopTimeUpdate1 = tripUpdate072350_1_N03R.stop_time_update[1]
+	const _scheduleStopTimeUpdate1 = {
+		trip_id: tripUpdate072350_1_N03R.trip.trip_id,
+		start_date: tripUpdate072350_1_N03R.trip.start_date,
+		stop_id: _stopTimeUpdate1.stop_id,
+		timestamp: timestamp - BigInt(123),
+		arrival_time: 123456n,
+		arrival_delay: 123n,
+		departure_time: 234567n,
+		departure_delay: 234n,
+	}
+
+	{ // Realtime `arrival: null`
+		const stopTimeUpdate1 = cloneDeep({
+			..._stopTimeUpdate1,
+			arrival: null
+		})
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.arrival, {
+			time: _scheduleStopTimeUpdate1.arrival_time,
+			// no delay field
+		})
+	}
+	{ // Realtime `arrival.time: null` & `arrival.delay: null`
+		const stopTimeUpdate1 = cloneDeep({
+			..._stopTimeUpdate1,
+			arrival: {
+				time: null,
+				delay: null,
+			},
+		})
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.arrival, {
+			time: _scheduleStopTimeUpdate1.arrival_time,
+			// no delay field
+		})
+	}
+	{ // Realtime timestamp older than Schedule timestamp
+		const stopTimeUpdate1 = cloneDeep(_stopTimeUpdate1)
+		const scheduleStopTimeUpdate1 = cloneDeep({
+			..._scheduleStopTimeUpdate1,
+			timestamp: timestamp + BigInt(12),
+		})
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.arrival, {
+			time: _scheduleStopTimeUpdate1.arrival_time,
+			// no delay field
+		})
+	}
+	{ // Realtime arrival unchanged
+		const stopTimeUpdate1 = cloneDeep(_stopTimeUpdate1)
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.arrival, _stopTimeUpdate1.arrival)
+	}
+
+	{ // Realtime `departure: null`
+		const stopTimeUpdate1 = cloneDeep({
+			..._stopTimeUpdate1,
+			departure: null
+		})
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.departure, {
+			time: _scheduleStopTimeUpdate1.departure_time,
+			// no delay field
+		})
+	}
+	{ // Realtime `departure.time: null` & `departure.delay: null`
+		const stopTimeUpdate1 = cloneDeep({
+			..._stopTimeUpdate1,
+			departure: {
+				time: null,
+				delay: null,
+			},
+		})
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.departure, {
+			time: _scheduleStopTimeUpdate1.departure_time,
+			// no delay field
+		})
+	}
+	{ // Realtime timestamp older than Schedule timestamp
+		const stopTimeUpdate1 = cloneDeep(_stopTimeUpdate1)
+		const scheduleStopTimeUpdate1 = cloneDeep({
+			..._scheduleStopTimeUpdate1,
+			timestamp: timestamp + BigInt(12),
+		})
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.departure, {
+			time: _scheduleStopTimeUpdate1.departure_time,
+			// no delay field
+		})
+	}
+	{ // Realtime departure unchanged
+		const stopTimeUpdate1 = cloneDeep(_stopTimeUpdate1)
+		const scheduleStopTimeUpdate1 = cloneDeep(_scheduleStopTimeUpdate1)
+		_restoreStopTimeUpdate(stopTimeUpdate1, timestamp, scheduleStopTimeUpdate1)
+		deepStrictEqual(stopTimeUpdate1.departure, _stopTimeUpdate1.departure)
+	}
+
+	// todo: other cases?
+})
+
 test('storing current & restoring previous StopTimeUpdates works', async (t) => {
 	await clearPreviousStopTimeUpdatesDb()
 	try {
@@ -419,7 +530,61 @@ test('storing current & restoring previous StopTimeUpdates works', async (t) => 
 			)
 		}
 
-		// todo: match TU with STUs missing some realtime data, check if restored from the DB
+		// 2. match TU with STUs missing some realtime data, check if restored from the DB
+		{
+			const newStopTimeUpdate = {
+				stop_id: 'some-random-stop-id',
+				arrival: {time: 1710954123n},
+				departure: {time: 1710954234n},
+			}
+			const feedMessageRestored = cloneDeep({
+				...feedMessage0,
+				entity: [
+					{
+						id: 'foo',
+						trip_update: {
+							...tripUpdate072350_1_N03R,
+							// todo: modify timestamp!
+							stop_time_update: [
+								{ // STU #0: remove departure_time
+									...tripUpdate072350_1_N03R.stop_time_update[0],
+									departure: {time: null},
+								},
+								{ // STU #1: remove arrival_time
+									...tripUpdate072350_1_N03R.stop_time_update[1],
+									arrival: {time: null},
+								},
+								newStopTimeUpdate,
+								// all other STUs: keep as-is
+								...tripUpdate072350_1_N03R.stop_time_update.slice(2),
+							],
+						},
+					},
+				],
+			})
+			await restoreStopTimeUpdatesFromDb(feedMessageRestored)
+
+			const tripUpdate0Restored = feedMessageRestored.entity[0].trip_update
+			const tripUpdate0Expected = feedMessage0.entity[0].trip_update
+
+			deepStrictEqual(
+				tripUpdate0Restored.stop_time_update[0],
+				tripUpdate0Expected.stop_time_update[0],
+				`TripUpdate #0's StopTimeUpdate #0 is not restored`,
+			)
+
+			deepStrictEqual(
+				tripUpdate0Restored.stop_time_update[1],
+				tripUpdate0Expected.stop_time_update[1],
+				`TripUpdate #0's StopTimeUpdate #1 is not restored`,
+			)
+
+			deepStrictEqual(
+				tripUpdate0Restored.stop_time_update[2],
+				newStopTimeUpdate,
+				`TripUpdate #0's StopTimeUpdate #2 is wrong`,
+			)
+		}
 	} finally {
 		await clearPreviousStopTimeUpdatesDb()
 	}
