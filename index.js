@@ -42,7 +42,12 @@ const createService = async (opt = {}) => {
 	// realtimeFeedName -> {abortFetching, events}
 	const realtimeFetchersByName = new Map()
 
-	for (const {realtimeFeedName, realtimeFeedUrl} of realtimeFeeds) {
+	for (const realtimeFeed of realtimeFeeds) {
+		const {
+			realtimeFeedName,
+			realtimeFeedUrl,
+			realtimeFeedApiKey,
+		} = realtimeFeed
 		logger.debug(logCtx, `setting up realtime feed fetcher for "${realtimeFeedName}"`)
 
 		const {
@@ -51,6 +56,7 @@ const createService = async (opt = {}) => {
 		} = startFetchingRealtimeFeed({
 			realtimeFeedName,
 			realtimeFeedUrl,
+			realtimeFeedApiKey,
 		})
 
 		realtimeFetchersByName.set(realtimeFeedName, {
