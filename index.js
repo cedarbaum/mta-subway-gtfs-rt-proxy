@@ -121,6 +121,7 @@ const createService = async (opt = {}) => {
 				}, 'processing realtime feed')
 
 				;(async () => {
+					// todo: pass in `realtimeFeedName` for logging
 					const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded)
 					setFeedMessage(feedMessage)
 				})()
