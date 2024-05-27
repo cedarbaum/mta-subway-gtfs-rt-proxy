@@ -12,6 +12,8 @@ jobs:
     name: build & publish Docker image
     needs: [lint-test]
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: check out the repo
         uses: actions/checkout@v4
