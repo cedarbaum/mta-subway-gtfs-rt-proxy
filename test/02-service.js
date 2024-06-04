@@ -13,6 +13,7 @@ import {connectToPostgres} from '../lib/db.js'
 
 const {FeedMessage} = gtfsRtBindings.transit_realtime
 const {Direction} = gtfsRtBindings.NyctTripDescriptor
+const {VehicleStopStatus} = gtfsRtBindings.transit_realtime.VehiclePosition
 // const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
 const PATH_TO_SERVICE = new URL(import.meta.resolve('../start.js')).pathname
@@ -169,18 +170,19 @@ const tripUpdate1 = {
 }
 const vehiclePosition1 = {
 	trip: {
-		trip_id: 'a-downtown-all-day',
+		trip_id: 'b-outbound-on-working-days',
 		start_date: '20190507',
-		route_id: 'A',
+		route_id: 'B',
 		'.nyct_trip_descriptor': {
 			train_id: 'another-train-id',
 			is_assigned: true,
 			direction: Direction.EAST,
 		},
 	},
-	current_stop_sequence: 1, // at `museum`
-	timestamp: 1557235812, // 2019-05-07T15:30:12+02:00
-	stop_id: 'museum',
+	current_stop_sequence: 13, // approaching `lake`
+	current_status: VehicleStopStatus.INCOMING_AT,
+	timestamp: 1557245960, // 2019-05-07T18:19:20+02:00
+	stop_id: 'lake',
 }
 const feedMessage0 = {
 	header: {
