@@ -126,12 +126,17 @@ const purgeTestDbs = async () => {
 	await promisify(db.end.bind(db))()
 }
 
-const assertMoreMatchingSuccessesThanFailures = (successesName, successes, failuresName, failures, filterFn) => {
-	const _successes = successes.data.find(filterFn)
-	const _failures = failures.data.find(filterFn)
+const assertMoreMatchingSuccessesThanFailures = (successesName, successes, failuresName, failures, matching_method, filterFn) => {
+	const _successes = successes.data.find(variant => (
+		filterFn(variant)
+		&& variant.labels.matching_method === matching_method
+	))
+	const totalFailures = failures.data
+		.filter(filterFn)
+		.reduce((totalFailures, variant) => totalFailures + variant.value, 0)
 	ok(
-		(_successes?.value || 0) > (_failures?.value || 0),
-		`${successesName} (${_successes?.value}) should be > ${failuresName} ${_failures?.value}`,
+		(_successes?.value || 0) > (totalFailures?.value || 0),
+		`${successesName}{matching_method=${matching_method}} (${_successes?.value}) should be > sum(${failuresName}) (${totalFailures})`,
 	)
 }
 
@@ -261,28 +266,36 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 	env.NYCT_SUBWAY_1234567_REALTIME_FEED_URL = `http://localhost:${realtimeFeedPort}/gtfs-rt.pb`
 	env.NYCT_SUBWAY_ACE_REALTIME_FEED_URL = '-' // disable
 
-	const checkMatchingSuccessesAndFailures = (metrics) => {
+	// Both the success as well as the failure metrics each have several variants, for example one for each matching method. Currently, we only assert that there are more successes for a specific matching method than all failures (of that schedule feed digest & route_id) combined.
+	// todo: assert more specifically?
+	const checkTripUpdatesMatchingSuccessesAndFailures = (metrics, matchingMethod) => {
 		const {
 			tripupdates_matching_successes_total,
 			tripupdates_matching_failures_total,
-			vehiclepositions_matching_successes_total,
-			vehiclepositions_matching_failures_total,
 		} = metrics
 		assertMoreMatchingSuccessesThanFailures(
 			'tripupdates_matching_successes_total',
 			tripupdates_matching_successes_total,
 			'tripupdates_matching_failures_total',
 			tripupdates_matching_failures_total,
+			matchingMethod,
 			({labels: {schedule_feed_digest: sched_digest, route_id}}) => (
 				sched_digest === scheduleFeedDigest.slice(0, sched_digest.length)
 				&& route_id === tripUpdate1.trip.route_id
 			),
 		)
+	}
+	const checkVehiclePositionsMatchingSuccessesAndFailures = (metrics, matchingMethod) => {
+		const {
+			vehiclepositions_matching_successes_total,
+			vehiclepositions_matching_failures_total,
+		} = metrics
 		assertMoreMatchingSuccessesThanFailures(
 			'vehiclepositions_matching_successes_total',
 			vehiclepositions_matching_successes_total,
 			'vehiclepositions_matching_failures_total',
 			vehiclepositions_matching_failures_total,
+			matchingMethod,
 			({labels: {schedule_feed_digest: sched_digest, route_id}}) => (
 				sched_digest === scheduleFeedDigest.slice(0, sched_digest.length)
 				&& route_id === vehiclePosition1.trip.route_id
@@ -338,7 +351,8 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// imported for the first time
 			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
 
-			checkMatchingSuccessesAndFailures(metrics)
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix')
+			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
 		// check matching with BAR_FEED
@@ -372,7 +386,8 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// imported again because the Schedule feed's digest has changed
 			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
 
-			checkMatchingSuccessesAndFailures(metrics)
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix')
+			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
 		// modify realtime feed, check matching with BAR_FEED again
@@ -405,7 +420,8 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// not imported again because the Schedule feed's digest hasn't changed
 			strictEqual(scheduleFeedImported?.value, 0, 'schedule_feed_imported_boolean should be 0')
 
-			checkMatchingSuccessesAndFailures(metrics)
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix')
+			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
 		// todo: tests for …_exact_constructed matching too?
