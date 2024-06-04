@@ -126,6 +126,7 @@ const createService = async (opt = {}) => {
 					setFeedMessage(feedMessage)
 				})()
 				.catch((err) => {
+					// todo: only warn-log for certain errors, otherwise error-log
 					logger.warn({
 						...__logCtx,
 						error: err,

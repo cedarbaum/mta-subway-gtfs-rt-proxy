@@ -295,6 +295,7 @@ test('matching a S03R VehiclePosition works', async (t) => {
 	deepStrictEqual(vehiclePosition, vehiclePosition075150_1_S03RMatched)
 })
 
+// todo
 test.skip('matching an Alert affecting S03R & N03R works', async (t) => {
 	const alert = cloneDeep(alert0)
 	await matchAlert(alert)
@@ -642,3 +643,5 @@ test('applying FeedReplacementPeriods works', async (t) => {
 
 	deepStrictEqual(feedMessage, expectedFeedMessage)
 })
+
+// todo: trip that visits one stop more than once, e.g. a loop

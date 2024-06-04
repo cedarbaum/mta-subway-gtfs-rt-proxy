@@ -408,6 +408,8 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			checkMatchingSuccessesAndFailures(metrics)
 		}
 
+		// todo: tests for …_exact_constructed matching too?
+
 		pServiceProcess.kill()
 	})()
 
