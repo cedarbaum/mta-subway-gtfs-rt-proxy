@@ -295,6 +295,21 @@ test('matching a S03R VehiclePosition works', async (t) => {
 	deepStrictEqual(vehiclePosition, vehiclePosition075150_1_S03RMatched)
 })
 
+test('matchTripUpdate() correctly filter by suffix', async (t) => {
+	const now = 1710953000_000
+	const prefixed = {
+		...tripUpdate072350_1_N03R,
+		trip: {
+			...tripUpdate072350_1_N03R.trip,
+			trip_id: '__' + tripUpdate072350_1_N03R.trip.trip_id,
+		},
+	}
+
+	const tripUpdate = cloneDeep(prefixed)
+	await matchTripUpdate(tripUpdate, {now})
+	strictEqual(tripUpdate.trip.trip_id, prefixed.trip.trip_id, 'TripUpdate must not be matched')
+})
+
 // todo
 test.skip('matching an Alert affecting S03R & N03R works', async (t) => {
 	const alert = cloneDeep(alert0)
