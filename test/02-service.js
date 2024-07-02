@@ -7,6 +7,7 @@ import {beforeEach, afterEach, test} from 'node:test'
 import {execa} from 'execa';
 import {ok, strictEqual} from 'node:assert'
 import {promisify} from 'node:util'
+import {createLogger} from '../lib/logger.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
 import {encodeFeedMessage} from '../lib/serve-gtfs-rt.js'
 import {connectToPostgres} from '../lib/db.js'
@@ -17,6 +18,8 @@ const {VehicleStopStatus} = gtfsRtBindings.transit_realtime.VehiclePosition
 // const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 
 const PATH_TO_SERVICE = new URL(import.meta.resolve('../start.js')).pathname
+
+const logger = createLogger('test', process.env.LOG_LEVEL_TEST || 'error')
 
 // DRY with https://github.com/mobidata-bw/postgis-gtfs-importer/blob/1e4481cb3874b1b3a5996e60ea5d6e98e2ec2df9/import.js#L24-L31
 const DIGEST_LENGTH = 6
@@ -38,6 +41,7 @@ const BAR_FEED = readFileSync(
 	new URL(import.meta.resolve('./bar.gtfs.zip')).pathname,
 )
 const BAR_FEED_DIGEST = sha256(BAR_FEED)
+logger.trace({FOO_FEED_DIGEST, BAR_FEED_DIGEST}, '')
 
 const serveFile = async (filename) => {
 	let file = null
@@ -125,6 +129,16 @@ const purgeTestDbs = async () => {
 	}
 
 	await promisify(db.end.bind(db))()
+}
+
+const debugLogMatchingMetrics = (metrics) => {
+	logger.debug({
+		schedule_feed_imported_boolean: metrics.schedule_feed_imported_boolean.data,
+		tripupdates_matching_successes_total: metrics.tripupdates_matching_successes_total.data,
+		tripupdates_matching_failures_total: metrics.tripupdates_matching_failures_total.data,
+		vehiclepositions_matching_successes_total: metrics.vehiclepositions_matching_successes_total.data,
+		vehiclepositions_matching_failures_total: metrics.vehiclepositions_matching_failures_total.data,
+	}, 'matching metrics')
 }
 
 const assertMoreMatchingSuccessesThanFailures = (successesName, successes, failuresName, failures, matching_method, filterFn) => {
@@ -347,6 +361,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			const metrics = await fetchAndParseMetrics({
 				port: metricsPort,
 			})
+			debugLogMatchingMetrics(metrics)
 
 			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
@@ -382,6 +397,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			const metrics = await fetchAndParseMetrics({
 				port: metricsPort,
 			})
+			debugLogMatchingMetrics(metrics)
 
 			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
@@ -416,6 +432,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			const metrics = await fetchAndParseMetrics({
 				port: metricsPort,
 			})
+			debugLogMatchingMetrics(metrics)
 
 			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
