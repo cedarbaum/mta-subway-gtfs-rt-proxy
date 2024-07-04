@@ -6,6 +6,7 @@ import {ALL_FEEDS} from './lib/feeds.js'
 import {startFetchingRealtimeFeed} from './lib/fetch-realtime-feed.js'
 import {createParseAndProcessFeed} from './lib/match.js'
 import {
+	queryImportedScheduleFeedVersions,
 	startRefreshingScheduleFeed,
 } from './lib/refresh-schedule-feeds.js'
 import {serveFeed} from './lib/serve-gtfs-rt.js'
@@ -186,6 +187,16 @@ const createService = async (opt = {}) => {
 	}
 
 	// ## refreshing of GTFS Schedule feeds
+
+	{
+		const currentDatabases = await queryImportedScheduleFeedVersions({
+			scheduleFeedName,
+		})
+		for (const {name, feedDigest} of currentDatabases) {
+			logger.trace(logCtx, `adding handlers for already imported schedule feed version with digest "${feedDigest}"`)
+			addScheduleFeedVersion(feedDigest, name)
+		}
+	}
 
 	startRefreshingScheduleFeed({
 		scheduleFeedName,
