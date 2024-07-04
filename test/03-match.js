@@ -26,8 +26,9 @@ const cOutboundAllDayScheduleTripId = 'c-outbound-all-day'
 
 const tripUpdateCOutboundAllDay = {
 	trip: {
-		// Because the code base assumes that (route_id, date, trip_id_suffix) is unique, we have to use such a long suffix here. (`all-day` would not be specific enough.)
-		trip_id: 'outbound-all-day', // a suffix of the Schedule trip_id
+		// This suffix doesn't unambigously match c-outbound-all-day, as there is also c-downtown-all-day running on 2019-05-24. Only filtering with stop_id & stop_sequence too makes the match unambiguous.
+		// Note: Technically, there could be two trips with equal (route_id, date, trip_id suffix, stop_id, stop_sequence), but we assume the MTA data not contain such trips.
+		trip_id: 'all-day', // a suffix of the Schedule trip_id
 		start_date: '20190524', // friday
 		route_id: 'C',
 		'.nyct_trip_descriptor': {train_id: 'rAndom-vehicle-id', is_assigned: true},
@@ -111,7 +112,7 @@ const tripUpdateCOutboundAllDayMatched = merge(cloneDeep(tripUpdateCOutboundAllD
 
 const vehiclePositionCOutboundAllDay = {
 	trip: {
-		// Because the code base assumes that (route_id, date, trip_id_suffix) is unique, we have to use such a long suffix here. (`all-day` would not be specific enough.)
+		// Because there is no more specific information to uniquely match the trip (e.g. stop_id/stop_sequence), and because the code base assumes that (route_id, date, trip_id_suffix) is unique, we have to use such a long suffix here. (`all-day` would not be specific enough.)
 		trip_id: 'outbound-all-day', // a suffix of the Schedule trip_id
 		start_date: '20190524', // friday
 		route_id: 'C',

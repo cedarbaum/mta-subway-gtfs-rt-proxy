@@ -368,7 +368,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// imported for the first time
 			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
 
-			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix')
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
@@ -404,7 +404,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// imported again because the Schedule feed's digest has changed
 			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
 
-			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix')
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
@@ -439,7 +439,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			// not imported again because the Schedule feed's digest hasn't changed
 			strictEqual(scheduleFeedImported?.value, 0, 'schedule_feed_imported_boolean should be 0')
 
-			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix')
+			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
