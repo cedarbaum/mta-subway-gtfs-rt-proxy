@@ -14,6 +14,6 @@ NODE_ENV=production gtfs-to-sql \
 	-- "$sample_gtfs_feed_dir"/*.txt \
 	| sponge | env "PGDATABASE=$db_name" psql -b
 
-for file in ../lib/sql.d/*; do
+for file in ../lib/postprocessing.d/*; do
 	env "PGDATABASE=$db_name" psql -b -1 -v 'ON_ERROR_STOP=1' -f "$file"
 done
