@@ -11,6 +11,8 @@ set -x
 
 env | grep '^PG' || true
 
+export MATCH_CONCURRENCY='1'
+
 source 01-match-prepare.sh 'test_mta_2024_03_18'
 env PGDATABASE=test_mta_2024_03_18 \
 	node --test 01-match.js
