@@ -8,7 +8,8 @@
 		"sourceType": "module"
 	},
 	"ignorePatterns": [
-		"node_modules"
+		"node_modules",
+		"postgis-gtfs-importer"
 	],
 	"rules": {
 		"no-unused-vars": [
