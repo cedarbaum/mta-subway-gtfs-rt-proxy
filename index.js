@@ -79,7 +79,7 @@ const createService = async (opt = {}) => {
 	// }
 	const feedHandlersByScheduleFeedDigest = new Map()
 
-	const addScheduleFeedVersion = (scheduleFeedDigest, scheduleDatabaseName) => {
+	const addScheduleFeedVersion = async (scheduleFeedDigest, scheduleDatabaseName) => {
 		const _logCtx = {
 			...logCtx,
 			scheduleFeedDigest,
@@ -94,7 +94,7 @@ const createService = async (opt = {}) => {
 		const {
 			parseAndProcessFeed: parseAndMatchRealtimeFeed,
 			closeConnections,
-		} = createParseAndProcessFeed({
+		} = await createParseAndProcessFeed({
 			// todo: pass realtimeFeedName through into metrics?
 			scheduleDatabaseName,
 			scheduleFeedDigest,
@@ -192,9 +192,10 @@ const createService = async (opt = {}) => {
 		const currentDatabases = await queryImportedScheduleFeedVersions({
 			scheduleFeedName,
 		})
+		// todo: do this in parallel?
 		for (const {name, feedDigest} of currentDatabases) {
 			logger.trace(logCtx, `adding handlers for already imported schedule feed version with digest "${feedDigest}"`)
-			addScheduleFeedVersion(feedDigest, name)
+			await addScheduleFeedVersion(feedDigest, name)
 		}
 	}
 
