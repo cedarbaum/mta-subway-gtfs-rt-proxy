@@ -60,6 +60,9 @@ COPY --from=builder \
 	/app/lib/gtfs-realtime.proto /app/lib/mta-gtfs-realtime.proto /app/lib/mta-gtfs-realtime.pb.js \
 	./lib/
 
+RUN adduser -u 1001 -G root -D app
+USER 1001
+
 EXPOSE 3000
 
 ENV PORT 3000
