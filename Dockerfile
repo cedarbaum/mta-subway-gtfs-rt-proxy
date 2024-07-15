@@ -33,7 +33,7 @@ LABEL org.opencontainers.image.licenses="ISC"
 WORKDIR /app
 
 # install tools
-# - bash, ncurses (tput), moreutils (sponge), postgresql-client (psql) & zstd are required by postgis-gtfs-importer.
+# - bash, ncurses (tput), moreutils (sponge), postgresql-client (psql), unzip & zstd are required by postgis-gtfs-importer.
 # - curl is required by curl-mirror, which is required by postgis-gtfs-importer.
 RUN apk add --update --no-cache \
 	bash \
@@ -41,6 +41,7 @@ RUN apk add --update --no-cache \
 	ncurses \
 	moreutils \
 	postgresql-client \
+	unzip \
 	zstd
 COPY --from=builder /app/curl-mirror.mjs ./
 RUN ln -s $PWD/curl-mirror.mjs /usr/local/bin/curl-mirror && curl-mirror --help >/dev/null
