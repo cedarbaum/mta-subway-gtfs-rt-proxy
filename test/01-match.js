@@ -239,7 +239,7 @@ const feedMessage1Matched = {
 }
 
 const queryDbOnce = async (...queryArgs) => {
-	const db = connectToPostgres()
+	const db = await connectToPostgres()
 	try {
 		return await db.query(...queryArgs)
 	} finally {

@@ -105,7 +105,7 @@ const SCHEDULE_FEED_BOOKKEEPING_DB_NAME = `test_${Math.random().toString(16).sli
 const SCHEDULE_FEED_DB_NAME_PREFIX = SCHEDULE_FEED_BOOKKEEPING_DB_NAME + '_'
 
 const createTestDbs = async () => {
-	const db = connectToPostgres()
+	const db = await connectToPostgres()
 
 	await db.query(`CREATE DATABASE "${SCHEDULE_FEED_BOOKKEEPING_DB_NAME}"`)
 
@@ -113,7 +113,7 @@ const createTestDbs = async () => {
 }
 
 const purgeTestDbs = async () => {
-	const db = connectToPostgres()
+	const db = await connectToPostgres()
 
 	await db.query(`DROP DATABASE "${SCHEDULE_FEED_BOOKKEEPING_DB_NAME}"`)
 
