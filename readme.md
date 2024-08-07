@@ -75,6 +75,8 @@ npm install cedarbaum/mta-subway-gtfs-rt-proxy
 // todo
 ```
 
+By default, `mta-subway-gtfs-rt-proxy` obtains MTA's Realtime feeds (1/2/3/4/5/6/7 and A/C/E) every 60 seconds and matches them against the Schedule feed. You can customize this behaviour, as well as many others, [using environment variables](docs/config.md).
+
 
 ## Related
 
