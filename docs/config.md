@@ -14,6 +14,7 @@ environment variable | default | unit | description
 `$LOG_LEVEL_POSTGIS_GTFS_IMPORTER` | `warn`| | How many logs to let `postgis-gtfs-importer` print, which are quite verbose.
 `$SCHEDULE_FEED_REFRESH_INTERVAL` | `30 * 60 * 1000`| ms | How often to check if MTA's Schedule feed has changed, minus the duration it took last time to check.
 `$SCHEDULE_FEED_REFRESH_MIN_INTERVAL` | `5 * 60 * 1000`| ms | Minimum time to wait between attempts to check if MTA's Schedule feed has changed. Effectively a lower bound for `$SCHEDULE_FEED_REFRESH_INTERVAL`.
+`$SCHEDULE_FETCHING_USER_AGENT` | `mta-subway-gtfs-rt-proxy v${pkg.version}` | | [HTTP `User-Agent`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent#specifications) to use while fetching the Schedule feed from MTA.
 `$GTFS_TMP_DIR` | `/tmp/gtfs`| | Where to cache MTA's Schedule feed. Note that this directory *does not* get cleared automatically!
 `$SCHEDULE_FEED_DB_NAME_PREFIX` | `gtfs_`| | Prefix to add to the PostgreSQL database name(s) when importing the Schedule feed (versions). Note that databases with this prefix may get deleted automatically! See also `postgis-gtfs-importer`'s docs for details.
 
