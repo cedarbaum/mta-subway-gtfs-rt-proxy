@@ -28,6 +28,6 @@ node lib/mta-gtfs-realtime.pb.js
 
 curl -fsSL \
 	'https://gist.github.com/derhuerst/745cf09fe5f3ea2569948dd215bbfe1a/raw/cefaf64e2dd5bfde30de12017c4823cdc89ac64c/mirror.mjs' \
-	-H 'User-Agent: mta-gtfs-rt-consolidation-service build script' \
+	-H 'User-Agent: cedarbaum/mta-subway-gtfs-rt-proxy build script' \
 	-o curl-mirror.mjs
 chmod +x curl-mirror.mjs

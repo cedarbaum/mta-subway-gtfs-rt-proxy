@@ -21,12 +21,12 @@ RUN npm run build
 # ---
 
 FROM node:20-alpine
-LABEL org.opencontainers.image.title="mta-gtfs-rt-consolidation-service"
-LABEL org.opencontainers.image.description="An HTTP service consolidating & normalizing the MTA (NYCT) GTFS-Realtime feeds."
+LABEL org.opencontainers.image.title="mta-subway-gtfs-rt-proxy"
+LABEL org.opencontainers.image.description="An HTTP service consolidating & normalizing the MTA (NYCT) Subway GTFS-Realtime feeds."
 LABEL org.opencontainers.image.authors="Jannis R <mail@jannisr.de>"
-LABEL org.opencontainers.image.documentation="https://github.com/derhuerst/mta-gtfs-rt-consolidation-service"
+LABEL org.opencontainers.image.documentation="https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy"
 # todo: does docker buildx add this automatically?
-LABEL org.opencontainers.image.source="https://github.com/derhuerst/mta-gtfs-rt-consolidation-service"
+LABEL org.opencontainers.image.source="https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy.git"
 LABEL org.opencontainers.image.revision="1"
 LABEL org.opencontainers.image.licenses="ISC"
 

@@ -65,7 +65,7 @@ By letting consumers send the *digest* (a.k.a. [hash](https://en.wikipedia.org/w
 ## Installation
 
 ```shell
-npm install derhuerst/mta-gtfs-rt-consolidation-service
+npm install cedarbaum/mta-subway-gtfs-rt-proxy
 ```
 
 

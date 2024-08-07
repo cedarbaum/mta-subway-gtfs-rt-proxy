@@ -1,17 +1,17 @@
 {
 	"private": true,
-	"name": "mta-gtfs-rt-consolidation-service",
-	"description": "An HTTP service consolidating & normalizing the MTA (NYCT) GTFS-Realtime feeds.",
+	"name": "mta-subway-gtfs-rt-proxy",
+	"description": "An HTTP service consolidating & normalizing the MTA (NYCT) Subway GTFS-Realtime feeds.",
 	"version": "1.0.0",
 	"type": "module",
 	"main": "index.js",
 	"author": "Jannis R <mail@jannisr.de>",
-	"homepage": "https://github.com/derhuerst/mta-gtfs-rt-consolidation-service",
+	"homepage": "https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/derhuerst/mta-gtfs-rt-consolidation-service.git"
+		"url": "git+https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy.git"
 	},
-	"bugs": "https://github.com/derhuerst/mta-gtfs-rt-consolidation-service/issues",
+	"bugs": "https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy/issues",
 	"license": "ISC",
 	"engines": {
 		"node": ">=20"
