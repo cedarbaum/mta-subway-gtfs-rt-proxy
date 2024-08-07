@@ -477,7 +477,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		await Promise.all([
 			pServiceProcess.catch((err) => {
 				// if the process has been killed deliberately (see below), we silence the error
-				if (err.killed) return;
+				if (err.isTerminated) return;
 				throw err
 			}),
 			pTest,
