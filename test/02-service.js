@@ -5,7 +5,7 @@ import ky from 'ky'
 import {getMetricsFromIterator as parseMetricsFromIterator} from 'prom2javascript'
 import {beforeEach, afterEach, test} from 'node:test'
 import {execa} from 'execa';
-import {ok, strictEqual} from 'node:assert'
+import {deepStrictEqual, ok, strictEqual} from 'node:assert'
 import {promisify} from 'node:util'
 import {createLogger} from '../lib/logger.js'
 import gtfsRtBindings from '../lib/mta-gtfs-realtime.pb.js'
@@ -68,6 +68,19 @@ const serveFile = async (filename) => {
 		stop: server.close.bind(server),
 		setFile,
 	}
+}
+
+const fetchImportedScheduleFeeds = async (cfg) => {
+	const {
+		port,
+	} = cfg
+
+	const url = `http://localhost:${port}/feeds`
+	const res = await ky(url, {
+		redirect: 'follow',
+		retry: 0,
+	})
+	return await res.json()
 }
 
 const fetchAndParseMatchedRealtimeFeed = async (cfg) => {
@@ -337,6 +350,11 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		// todo: get notified about schedule re-import instead of waiting
 		await new Promise(r => setTimeout(r, 3_000)) // wait for Schedule feed to be imported
 		{
+			const importedScheduleFeeds = await fetchImportedScheduleFeeds({port})
+			strictEqual(importedScheduleFeeds.length, 1, 'should be exactly 1 imported Schedule feed')
+			const importedFoo = importedScheduleFeeds.find(({feedDigest}) => feedDigest === FOO_FEED_DIGEST)
+			ok(importedFoo, 'set of imported Schedule feeds should include FOO_FEED')
+
 			const {
 				header: feedHeader,
 				entity: feedEntities,
@@ -378,6 +396,13 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		// todo: trigger & get notified about schedule re-import instead of waiting
 		await new Promise(r => setTimeout(r, 6_000 + 3_000)) // wait for Schedule feed to be (re-)imported
 		{
+			const importedScheduleFeeds = await fetchImportedScheduleFeeds({port})
+			strictEqual(importedScheduleFeeds.length, 2, 'should be exactly 2 imported Schedule feeds')
+			const importedFoo = importedScheduleFeeds.find(({feedDigest}) => feedDigest === FOO_FEED_DIGEST)
+			ok(importedFoo, 'set of imported Schedule feeds should include FOO_FEED')
+			const importedBar = importedScheduleFeeds.find(({feedDigest}) => feedDigest === BAR_FEED_DIGEST)
+			ok(importedBar, 'set of imported Schedule feeds should include BAR_FEED')
+
 			const {
 				header: feedHeader,
 				entity: feedEntities,

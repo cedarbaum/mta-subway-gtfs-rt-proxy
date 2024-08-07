@@ -1,5 +1,6 @@
 import {ok} from 'node:assert'
 import {createServer as createHttpServer} from 'node:http'
+import pick from 'lodash/pick.js'
 import {createMetricsServer} from './lib/metrics.js'
 import {createLogger} from './lib/logger.js'
 import {ALL_FEEDS} from './lib/feeds.js'
@@ -188,8 +189,9 @@ const createService = async (opt = {}) => {
 
 	// ## refreshing of GTFS Schedule feeds
 
+	let currentDatabases = []
 	{
-		const currentDatabases = await queryImportedScheduleFeedVersions({
+		currentDatabases = await queryImportedScheduleFeedVersions({
 			scheduleFeedName,
 		})
 		// todo: do this in parallel?
@@ -202,7 +204,8 @@ const createService = async (opt = {}) => {
 	startRefreshingScheduleFeed({
 		scheduleFeedName,
 		scheduleFeedUrl,
-		onImportDone: ({currentDatabases}) => {
+		onImportDone: ({currentDatabases: _currentDatabases}) => {
+			currentDatabases = _currentDatabases
 			logger.trace(logCtx, 'currently imported databases: ' + currentDatabases.map(db => db.name).join(', '))
 
 			for (const oldScheduleFeedDigest of feedHandlersByScheduleFeedDigest.keys()) {
@@ -237,6 +240,14 @@ const createService = async (opt = {}) => {
 		}, 'handling incoming HTTP request')
 		const url = new URL(req.url, 'http://localhost')
 		const pathComponents = url.pathname === '/' ? [] : url.pathname.slice(1).split('/')
+
+		// /feeds
+		if (pathComponents[0] === 'feeds' && pathComponents.length === 1) {
+			const body = currentDatabases.map(db => pick(db, ['name', 'feedDigest']))
+			res.setHeader('content-type', 'application/json')
+			res.end(JSON.stringify(body))
+			return;
+		}
 
 		// /feeds/:realtimeFeedName?schedule-feed-digest
 		// todo: use express for routing?
