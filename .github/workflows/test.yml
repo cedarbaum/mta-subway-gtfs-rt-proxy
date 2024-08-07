@@ -81,6 +81,7 @@ jobs:
         PGPASSWORD: password
         # more verbose service logging to be able to analyze why tests fail
         LOG_LEVEL: trace
+        LOG_LEVEL_SERVICE: debug
         LOG_LEVEL_TEST: trace
         LOG_LEVEL_MATCHING: debug
         LOG_LEVEL_SCHEDULE_DATA: debug

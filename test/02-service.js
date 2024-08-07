@@ -436,7 +436,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		// modify realtime feed, check matching with BAR_FEED again
 		setRealtimeFeed(encodeFeedMessage(feedMessage1))
 		// todo: trigger & get notified about realtime fetching instead of waiting
-		await new Promise(r => setTimeout(r, 2_000))
+		await new Promise(r => setTimeout(r, 3_000))
 		{
 			const {
 				header: feedHeader,
