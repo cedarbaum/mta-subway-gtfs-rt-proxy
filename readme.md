@@ -65,14 +65,36 @@ By letting consumers send the *digest* (a.k.a. [hash](https://en.wikipedia.org/w
 ## Installation
 
 ```shell
-npm install cedarbaum/mta-subway-gtfs-rt-proxy
+git clone https://github.com/cedarbaum/mta-subway-gtfs-rt-proxy.git
+cd mta-subway-gtfs-rt-proxy
+npm install
+npm run build
 ```
 
 
 ## Usage
 
-```js
-// todo
+> [!IMPORTANT]
+> By accessing the MTA feeds, you agree to [their terms and conditions](https://new.mta.info/developers/terms-and-conditions).
+
+### database access
+
+Using [`postgis-gtfs-importer`](https://github.com/mobidata-bw/postgis-gtfs-importer), the service imports the GTFS Schedule data into [PostgreSQL](https://www.postgresql.org) databases. Next to a "bookkeeping" database, one database is used for each version of the GTFS Schedule feed.
+
+You can configure database access using the [libpq environment variables](https://www.postgresql.org/docs/14/libpq-envars.html). The PostgreSQL role/user used by the service will need the `CREATEDB` privilege/permission (see [`CREATE ROLE`'s docs](https://www.postgresql.org/docs/14/sql-createrole.html)).
+
+Refer to [`postgis-gtfs-importer`'s docs](https://github.com/mobidata-bw/postgis-gtfs-importer/blob/v4/README.md) for more information.
+
+### running
+
+```shell
+./start.js
+```
+
+If you want to see the logs in a human-readable format, pipe them through `pino-pretty`:
+
+```shell
+./start.js | ./node_modules/.bin/pino-pretty
 ```
 
 By default, `mta-subway-gtfs-rt-proxy` obtains MTA's Realtime feeds (1/2/3/4/5/6/7 and A/C/E) every 60 seconds and matches them against the Schedule feed. You can customize this behaviour, as well as many others, [using environment variables](docs/config.md).
