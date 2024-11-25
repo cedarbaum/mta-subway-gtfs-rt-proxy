@@ -1,13 +1,15 @@
 # MTA GTFS-RT consolidation & normalization service
 
-**An HTTP service that consolidates and normalizes the [MTA (NYCT)](https://en.wikipedia.org/wiki/New_York_City_Transit_Authority) [GTFS-Realtime (GTFS-RT)](https://gtfs.org/realtime/) [feeds](https://api.mta.info/).**
+**An HTTP service that consolidates and normalizes the [MTA (NYCT)](https://en.wikipedia.org/wiki/New_York_City_Transit_Authority) [GTFS-Realtime (GTFS-RT)](https://gtfs.org/realtime/) [Subway feeds](https://api.mta.info/).**
+
+It is used to feed an [OpenTripPlanner (OTP)](https://www.opentripplanner.org) instance with realtime data.
 
 
 ## How it works
 
 ### Problems with the MTA feeds
 
-[MTA](https://en.wikipedia.org/wiki/Metropolitan_Transportation_Authority)/[NYCT](https://en.wikipedia.org/wiki/New_York_City_Transit_Authority) offers both a set of [GTFS Schedule](https://gtfs.org/schedule/) [feeds](https://new.mta.info/developers) (that express the lines' schedule as planned in advance) and a set of [GTFS Realtime (GTFS-RT)](https://gtfs.org/realtime) feeds (that each contain all deviations from the respective Schedule feed).
+[MTA](https://en.wikipedia.org/wiki/Metropolitan_Transportation_Authority)/[NYCT](https://en.wikipedia.org/wiki/New_York_City_Transit_Authority) offers both a set of [GTFS Schedule](https://gtfs.org/schedule/) [feeds](https://new.mta.info/developers) feeds (that express the lines' schedule as planned in advance) and a set of [GTFS Realtime (GTFS-RT)](https://gtfs.org/realtime) feeds (that each contain all deviations from the respective Schedule feed).
 
 However, they deviate from the spec in two significant ways:
 1. The **Realtime feeds do not (re-)use the trip IDs from the Schedule feed** but only the last part of them (or arbitrary ones in some cases). This means that consumers cannot easily determine *which* scheduled trains are canceled, delayed, etc. – The *Matching* section below describes this service's approach to this.
