@@ -27,7 +27,7 @@ sed -E -i -e 's/import \* as \$protobuf from (.+)/import * as _$protobuf from \1
 node lib/mta-gtfs-realtime.pb.js
 
 curl -fsSL \
-	'https://gist.github.com/derhuerst/745cf09fe5f3ea2569948dd215bbfe1a/raw/cefaf64e2dd5bfde30de12017c4823cdc89ac64c/mirror.mjs' \
+	'https://gist.github.com/derhuerst/745cf09fe5f3ea2569948dd215bbfe1a/raw/9d145086ba239f05b20b6b984fa49563bd781194/mirror.mjs' \
 	-H 'User-Agent: cedarbaum/mta-subway-gtfs-rt-proxy build script' \
 	-o curl-mirror.mjs
 chmod +x curl-mirror.mjs
