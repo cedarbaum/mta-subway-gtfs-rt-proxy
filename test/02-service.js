@@ -352,7 +352,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		{
 			const importedScheduleFeeds = await fetchImportedScheduleFeeds({port})
 			strictEqual(importedScheduleFeeds.length, 1, 'should be exactly 1 imported Schedule feed')
-			const importedFoo = importedScheduleFeeds.find(({feedDigest}) => feedDigest === FOO_FEED_DIGEST)
+			const importedFoo = importedScheduleFeeds.find(({scheduleFeedDigest}) => scheduleFeedDigest === FOO_FEED_DIGEST)
 			ok(importedFoo, 'set of imported Schedule feeds should include FOO_FEED')
 
 			const {
@@ -398,9 +398,9 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 		{
 			const importedScheduleFeeds = await fetchImportedScheduleFeeds({port})
 			strictEqual(importedScheduleFeeds.length, 2, 'should be exactly 2 imported Schedule feeds')
-			const importedFoo = importedScheduleFeeds.find(({feedDigest}) => feedDigest === FOO_FEED_DIGEST)
+			const importedFoo = importedScheduleFeeds.find(({scheduleFeedDigest}) => scheduleFeedDigest === FOO_FEED_DIGEST)
 			ok(importedFoo, 'set of imported Schedule feeds should include FOO_FEED')
-			const importedBar = importedScheduleFeeds.find(({feedDigest}) => feedDigest === BAR_FEED_DIGEST)
+			const importedBar = importedScheduleFeeds.find(({scheduleFeedDigest}) => scheduleFeedDigest === BAR_FEED_DIGEST)
 			ok(importedBar, 'set of imported Schedule feeds should include BAR_FEED')
 
 			const {

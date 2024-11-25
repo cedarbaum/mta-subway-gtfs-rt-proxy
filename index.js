@@ -252,13 +252,9 @@ const createService = async (opt = {}) => {
 				}
 				const realtimeFeedNames = Array.from(feedHandlersByScheduleFeedDigest.get(scheduleFeedDigest).feedHandlers.keys())
 				return realtimeFeedNames.map((realtimeFeedName) => ({
-					// todo [breaking]: remove, the schedule feed DB's name is not helpful
-					name: scheduleFeedDb.name,
 					realtimeFeedName,
-					// todo [breaking]: rename to scheduleFeedDigest
-					feedDigest: scheduleFeedDigest,
-					// todo [breaking]: rename to scheduleFeedImportedAt
-					importedAt: new Date(scheduleFeedImportedAt * 1000).toISOString(),
+					scheduleFeedDigest,
+					scheduleFeedImportedAt: new Date(scheduleFeedImportedAt * 1000).toISOString(),
 				}))
 			})
 			res.setHeader('content-type', 'application/json')
