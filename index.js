@@ -245,6 +245,7 @@ const createService = async (opt = {}) => {
 			const body = currentDatabases.flatMap((scheduleFeedDb) => {
 				const {
 					feedDigest: scheduleFeedDigest,
+					importedAt: scheduleFeedImportedAt,
 				} = scheduleFeedDb
 				if (!feedHandlersByScheduleFeedDigest.has(scheduleFeedDigest)) {
 					return []
@@ -256,6 +257,8 @@ const createService = async (opt = {}) => {
 					realtimeFeedName,
 					// todo [breaking]: rename to scheduleFeedDigest
 					feedDigest: scheduleFeedDigest,
+					// todo [breaking]: rename to scheduleFeedImportedAt
+					importedAt: new Date(scheduleFeedImportedAt * 1000).toISOString(),
 				}))
 			})
 			res.setHeader('content-type', 'application/json')
