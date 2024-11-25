@@ -50,7 +50,7 @@ jobs:
         ua='mta-gtfs-rt-consolidation-service CI'
         assets="$(curl 'https://api.github.com/repos/jqnatividad/qsv/releases/latest' -H "User-Agent: $ua" -fsSL | jq -rc '.assets')"
         set -x
-        zip_url="$(echo "$assets" | jq -rc '.[] | [.name, .browser_download_url]' | grep -i Linux | grep "$(uname -m)" | head -n 1 | jq -rc '.[1]')"
+        zip_url="$(echo "$assets" | jq -rc '.[] | [.name, .browser_download_url]' | grep -i '\blinux-musl\b' | grep "$(uname -m)" | head -n 1 | jq -rc '.[1]')"
         wget -nv -U "$ua" -O /tmp/qsv.zip "$zip_url"
         unzip -n -d /usr/local/bin /tmp/qsv.zip qsv
         chmod +x /usr/local/bin/qsv
