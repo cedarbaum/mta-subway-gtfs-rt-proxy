@@ -1,6 +1,5 @@
 import {ok} from 'node:assert'
 import {createServer as createHttpServer} from 'node:http'
-import pick from 'lodash/pick.js'
 import {createMetricsServer} from './lib/metrics.js'
 import {createLogger} from './lib/logger.js'
 import {ALL_FEEDS} from './lib/feeds.js'
@@ -243,7 +242,22 @@ const createService = async (opt = {}) => {
 
 		// /feeds
 		if (pathComponents[0] === 'feeds' && pathComponents.length === 1) {
-			const body = currentDatabases.map(db => pick(db, ['name', 'feedDigest']))
+			const body = currentDatabases.flatMap((scheduleFeedDb) => {
+				const {
+					feedDigest: scheduleFeedDigest,
+				} = scheduleFeedDb
+				if (!feedHandlersByScheduleFeedDigest.has(scheduleFeedDigest)) {
+					return []
+				}
+				const realtimeFeedNames = Array.from(feedHandlersByScheduleFeedDigest.get(scheduleFeedDigest).feedHandlers.keys())
+				return realtimeFeedNames.map((realtimeFeedName) => ({
+					// todo [breaking]: remove, the schedule feed DB's name is not helpful
+					name: scheduleFeedDb.name,
+					realtimeFeedName,
+					// todo [breaking]: rename to scheduleFeedDigest
+					feedDigest: scheduleFeedDigest,
+				}))
+			})
 			res.setHeader('content-type', 'application/json')
 			res.end(JSON.stringify(body))
 			return;
