@@ -27,6 +27,9 @@ const createService = async (opt = {}) => {
 
 	// todo: iterate over all schedule feeds
 	const [scheduleFeed] = ALL_FEEDS
+	logger.debug({
+		feeds: [scheduleFeed],
+	}, 'configured feed(s)')
 	const {
 		scheduleFeedName,
 		scheduleFeedUrl,
@@ -123,8 +126,9 @@ const createService = async (opt = {}) => {
 
 				;(async () => {
 					// todo: pass in `realtimeFeedName` for logging
-					const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded)
+					const feedMessage = await parseAndMatchRealtimeFeed(feedEncoded, realtimeFeedName)
 					setFeedMessage(feedMessage)
+					logger.debug(__logCtx, 'successfully processed realtime feed update')
 				})()
 				.catch((err) => {
 					// todo: only warn-log for certain errors, otherwise error-log
