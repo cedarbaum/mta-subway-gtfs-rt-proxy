@@ -168,7 +168,7 @@ const createService = async (opt = {}) => {
 		})
 	}
 
-	// todo: isn't this function called only after the database has been (attempted to get) removed? why close client connections then? solving this properly probably needs a rework of postgis-gtfs-importer.
+	// todo: isn't this function called only after the database has been (attempted to get) removed? why close client connections then? solving this properly needs v5 of postgis-gtfs-importer.
 	const removeScheduleFeedVersion = (scheduleFeedDigest) => {
 		logger.info(logCtx, `removing obsolete matcher for digest "${scheduleFeedDigest}"`)
 
