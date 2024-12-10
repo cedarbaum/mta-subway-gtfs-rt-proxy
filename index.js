@@ -76,6 +76,7 @@ const createService = async (opt = {}) => {
 	// - Each "feed handler" consists of two functions `matchAndEncodeFeed` & `serveFeed`.
 
 	// todo: after process start it is empty, figure out a solution
+	// todo [breaking]: rename `closeConnections` to e.g. `stopMatchingRealtimeFeed`
 	// scheduleFeedDigest -> {
 	// 	feedHandlers: realtimeFeedName -> {serveFeed, stop},
 	// 	closeConnections,
@@ -96,7 +97,7 @@ const createService = async (opt = {}) => {
 
 		const {
 			parseAndProcessFeed: parseAndMatchRealtimeFeed,
-			closeConnections,
+			stop: stopMatchingRealtimeFeed,
 		} = await createParseAndProcessFeed({
 			// todo: pass realtimeFeedName through into metrics?
 			scheduleDatabaseName,
@@ -164,7 +165,7 @@ const createService = async (opt = {}) => {
 
 		feedHandlersByScheduleFeedDigest.set(scheduleFeedDigest, {
 			feedHandlers,
-			closeConnections,
+			closeConnections: stopMatchingRealtimeFeed,
 		})
 	}
 
