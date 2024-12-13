@@ -98,6 +98,7 @@ const createService = async (opt = {}) => {
 		const {
 			parseAndProcessFeed: parseAndMatchRealtimeFeed,
 			stop: stopMatchingRealtimeFeed,
+			checkIfHealthy: checkIfMatcherIsHealthy,
 		} = await createParseAndProcessFeed({
 			// todo: pass realtimeFeedName through into metrics?
 			scheduleDatabaseName,
@@ -166,6 +167,7 @@ const createService = async (opt = {}) => {
 		feedHandlersByScheduleFeedDigest.set(scheduleFeedDigest, {
 			feedHandlers,
 			closeConnections: stopMatchingRealtimeFeed,
+			checkIfHealthy: checkIfMatcherIsHealthy,
 		})
 	}
 
@@ -205,7 +207,10 @@ const createService = async (opt = {}) => {
 		}
 	}
 
-	startRefreshingScheduleFeed({
+	const {
+		checkIfHealthy: checkIfScheduleFeedRefreshIsHealthy,
+		checkIfReady: checkIfScheduleFeedRefreshIsReady,
+	} = startRefreshingScheduleFeed({
 		scheduleFeedName,
 		scheduleFeedUrl,
 		onImportDone: ({currentDatabases: _currentDatabases}) => {
@@ -299,7 +304,45 @@ const createService = async (opt = {}) => {
 			return;
 		}
 
-		// todo: add health check endpoint
+		if (pathComponents[0] === 'health' && pathComponents.length === 1) {
+			;(async () => {
+				try {
+					const statuses = await Promise.all([
+						checkIfScheduleFeedRefreshIsHealthy(),
+						...(
+							Array.from(feedHandlersByScheduleFeedDigest.values())
+							.flatMap(({checkIfHealthy}) => checkIfHealthy())
+						),
+					])
+					res.statusCode = statuses.some(status => status !== true) ? 503 : 200
+					res.end('')
+				} catch (err) {
+					logger.warn({
+						error: err,
+					}, 'failed to check if healthy')
+					res.statusCode = 503 // Service Unavailable
+					res.end('')
+				}
+			})()
+			return;
+		}
+		if (pathComponents[0] === 'ready' && pathComponents.length === 1) {
+			;(async () => {
+				try {
+					const isReady = await checkIfScheduleFeedRefreshIsReady()
+					res.statusCode = isReady ? 200 : 503
+					res.end('')
+				} catch (err) {
+					logger.warn({
+						error: err,
+					}, 'failed to check if ready')
+					res.statusCode = 503 // Service Unavailable
+					res.end('')
+				}
+			})()
+			return;
+		}
+
 		res.statusCode = 404
 		res.end('not found')
 	}
