@@ -170,6 +170,22 @@ const alert0Matched = {
 	],
 }
 
+// a made-up TripUpdate that has no Schedule equivalent
+const tripUpdateFooBar = {
+	trip: {
+		trip_id: 'foo-bar',
+		start_date: '20240320',
+		route_id: 'foo',
+	},
+	stop_time_update: [
+		{
+			arrival: {time: 1710954567n},
+			departure: {time: 1710955678n},
+			stop_id: 'some-unknown-stop',
+		},
+	],
+}
+
 const feedMessage0 = {
 	header: {
 		gtfs_realtime_version: '1.0',
@@ -286,6 +302,13 @@ test('matching N03R TripUpdate still happens if it has the Schedule trip_id', as
 	await matchTripUpdate(tripUpdate, {now})
 
 	deepStrictEqual(tripUpdate, tripUpdate072350_1_N03RMatched)
+})
+
+test('unmatched TripUpdates get schedule_relationship: ADDED', async (t) => {
+	const tripUpdate = cloneDeep(tripUpdateFooBar)
+	await matchTripUpdate(tripUpdate)
+
+	strictEqual(tripUpdate?.trip?.schedule_relationship, ScheduleRelationship.ADDED, 'wrong schedule_relationship')
 })
 
 test('matching a S03R VehiclePosition works', async (t) => {
