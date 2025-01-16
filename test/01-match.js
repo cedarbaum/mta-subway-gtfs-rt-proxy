@@ -11,6 +11,7 @@ import {connectToPostgres} from '../lib/db.js'
 import {_restoreStopTimeUpdate} from '../lib/restore-stoptimeupdates.js'
 
 const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
+const {VehicleStopStatus} = gtfsRtBindings.transit_realtime.VehiclePosition
 
 const SCHEDULE_DB_NAME = process.env.PGDATABASE
 ok(SCHEDULE_DB_NAME, 'SCHEDULE_DB_NAME')
@@ -186,6 +187,17 @@ const tripUpdateFooBar = {
 	],
 }
 
+// a made-up VehiclePosition that has no Schedule equivalent
+const vehiclePositionBarBaz = {
+	trip: {
+		trip_id: 'bar-baz',
+		start_date: '20240320',
+		route_id: 'foo',
+	},
+	current_stop_sequence: 123,
+	current_status: VehicleStopStatus.IN_TRANSIT_TO,
+}
+
 const feedMessage0 = {
 	header: {
 		gtfs_realtime_version: '1.0',
@@ -316,6 +328,13 @@ test('matching a S03R VehiclePosition works', async (t) => {
 	await matchVehiclePosition(vehiclePosition)
 
 	deepStrictEqual(vehiclePosition, vehiclePosition075150_1_S03RMatched)
+})
+
+test('unmatched VehiclePositions get schedule_relationship: ADDED', async (t) => {
+	const vehiclePosition = cloneDeep(vehiclePositionBarBaz)
+	await matchVehiclePosition(vehiclePosition)
+
+	strictEqual(vehiclePosition?.trip?.schedule_relationship, ScheduleRelationship.ADDED, 'wrong schedule_relationship')
 })
 
 test('matchTripUpdate() correctly filter by suffix', async (t) => {
