@@ -2,7 +2,6 @@ import {fileURLToPath} from 'node:url'
 import {readFileSync} from 'node:fs'
 import {inspect} from 'node:util'
 import {
-	parseEncodedFeed,
 	createParseAndProcessFeed,
 } from '../index.js'
 

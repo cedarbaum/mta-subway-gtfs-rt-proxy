@@ -293,7 +293,7 @@ test('matching a S03R VehiclePosition works', async (t) => {
 	deepStrictEqual(vehiclePosition, vehiclePosition075150_1_S03RMatched)
 })
 
-test('matchTripUpdate() correctly filter by suffix', async (t) => {
+test('matchTripUpdate() correctly filters by suffix', async (t) => {
 	const now = 1710953000_000
 	const prefixed = {
 		...tripUpdate072350_1_N03R,

@@ -268,7 +268,7 @@ const createService = async (opt = {}) => {
 		}
 
 		// /feeds/:realtimeFeedName?schedule-feed-digest
-		// todo: use express for routing?
+		// todo: use express or router for routing?
 		if (pathComponents[0] === 'feeds' && pathComponents.length === 2) {
 			const realtimeFeedName = pathComponents[1]
 			if (!realtimeFetchersByName.has(realtimeFeedName)) {
