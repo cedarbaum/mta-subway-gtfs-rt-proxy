@@ -15,7 +15,6 @@ const {ScheduleRelationship} = gtfsRtBindings.transit_realtime.TripDescriptor
 const SCHEDULE_DB_NAME = process.env.PGDATABASE
 ok(SCHEDULE_DB_NAME, 'SCHEDULE_DB_NAME')
 const SCHEDULE_FEED_DIGEST = 'ce8d9c' // first 3 bytes of SHA-256 hash
-const SCHEDULE_FEED_DIGEST_SLICE = SCHEDULE_FEED_DIGEST.slice(0, 1)
 
 const tripUpdate072350_1_N03RScheduleTripId = 'AFA23GEN-1092-Weekday-00_072350_1..N03R'
 const tripUpdate072350_1_N03R = {
@@ -262,7 +261,6 @@ const {
 } = await createParseAndProcessFeed({
 	scheduleDatabaseName: SCHEDULE_DB_NAME,
 	scheduleFeedDigest: SCHEDULE_FEED_DIGEST,
-	scheduleFeedDigestSlice: SCHEDULE_FEED_DIGEST_SLICE,
 })
 
 after(async () => {
@@ -295,7 +293,7 @@ test('matching a S03R VehiclePosition works', async (t) => {
 	deepStrictEqual(vehiclePosition, vehiclePosition075150_1_S03RMatched)
 })
 
-test('matchTripUpdate() correctly filter by suffix', async (t) => {
+test('matchTripUpdate() correctly filters by suffix', async (t) => {
 	const now = 1710953000_000
 	const prefixed = {
 		...tripUpdate072350_1_N03R,

@@ -91,10 +91,6 @@ const createService = async (opt = {}) => {
 		}
 		logger.info(_logCtx, `creating new matcher for schedule database "${scheduleDatabaseName}"`)
 
-		// Note: Prometheus stores time series per combination of label values, so having labels with a high or even unbound cardinality is a problem. We still want to be able to tell the schedule databases' metrics apart in the monitoring system, so we add the first hex digit (with a cardinality of 16) of the GTFS Schedule feed's hash as a label.
-		// see also https://www.robustperception.io/cardinality-is-key/
-		const scheduleFeedDigestSlice = scheduleFeedDigest.slice(0, 1)
-
 		const {
 			parseAndProcessFeed: parseAndMatchRealtimeFeed,
 			stop: stopMatchingRealtimeFeed,
@@ -103,7 +99,6 @@ const createService = async (opt = {}) => {
 			// todo: pass realtimeFeedName through into metrics?
 			scheduleDatabaseName,
 			scheduleFeedDigest,
-			scheduleFeedDigestSlice,
 		})
 
 		const createFeedHandler = (realtimeFeedName) => {
@@ -117,7 +112,7 @@ const createService = async (opt = {}) => {
 				setFeed: setFeedMessage,
 				onRequest: serveFeedOnRequest,
 			} = serveFeed({
-				scheduleFeedDigest, scheduleFeedDigestSlice,
+				scheduleFeedDigest,
 			})
 
 			const processRealtimeFeed = ({feedEncoded}) => {
@@ -273,7 +268,7 @@ const createService = async (opt = {}) => {
 		}
 
 		// /feeds/:realtimeFeedName?schedule-feed-digest
-		// todo: use express for routing?
+		// todo: use express or router for routing?
 		if (pathComponents[0] === 'feeds' && pathComponents.length === 2) {
 			const realtimeFeedName = pathComponents[1]
 			if (!realtimeFetchersByName.has(realtimeFeedName)) {

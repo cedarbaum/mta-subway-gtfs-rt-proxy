@@ -13,7 +13,6 @@ const SCHEDULE_DB_NAME = process.env.PGDATABASE
 ok(SCHEDULE_DB_NAME, 'SCHEDULE_DB_NAME')
 // `sha256sum node_modules/sample-gtfs-feed/gtfs.zip`
 const SCHEDULE_FEED_DIGEST = '3669d7' // first 3 bytes of SHA-256 hash
-const SCHEDULE_FEED_DIGEST_SLICE = SCHEDULE_FEED_DIGEST.slice(0, 1)
 
 // from sample-gtfs-feed@0.13's `stop_times.js`:
 // > ```
@@ -142,7 +141,6 @@ const {
 } = await createParseAndProcessFeed({
 	scheduleDatabaseName: SCHEDULE_DB_NAME,
 	scheduleFeedDigest: SCHEDULE_FEED_DIGEST,
-	scheduleFeedDigestSlice: SCHEDULE_FEED_DIGEST_SLICE,
 })
 
 after(async () => {
