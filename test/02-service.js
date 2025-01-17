@@ -146,7 +146,7 @@ const purgeTestDbs = async () => {
 
 const debugLogMatchingMetrics = (metrics) => {
 	logger.debug({
-		schedule_feed_imported_boolean: metrics.schedule_feed_imported_boolean.data,
+		schedule_feed_imported_timestamp_seconds: metrics.schedule_feed_imported_timestamp_seconds.data,
 		tripupdates_matching_successes_total: metrics.tripupdates_matching_successes_total.data,
 		tripupdates_matching_failures_total: metrics.tripupdates_matching_failures_total.data,
 		vehiclepositions_matching_successes_total: metrics.vehiclepositions_matching_successes_total.data,
@@ -347,6 +347,7 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 
 	const pTest = (async () => {
 		// check matching with FOO_FEED
+		const tBeforeImportFoo = Date.now()
 		// todo: get notified about schedule re-import instead of waiting
 		await new Promise(r => setTimeout(r, 3_000)) // wait for Schedule feed to be imported
 		{
@@ -381,16 +382,19 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			})
 			debugLogMatchingMetrics(metrics)
 
-			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			const scheduleFeedImported = metrics.schedule_feed_imported_timestamp_seconds.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
-			// imported for the first time
-			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
+			ok(
+				scheduleFeedImported?.value >= Math.round(tBeforeImportFoo / 1000),
+				'schedule_feed_imported_timestamp_seconds should be larger than tBeforeImportFoo',
+			)
 
 			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
 		// check matching with BAR_FEED
+		const tBeforeImportBar = Date.now()
 		setScheduleFeed(BAR_FEED)
 		scheduleFeedDigest = BAR_FEED_DIGEST
 		// todo: trigger & get notified about schedule re-import instead of waiting
@@ -424,16 +428,20 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			})
 			debugLogMatchingMetrics(metrics)
 
-			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			const scheduleFeedImported = metrics.schedule_feed_imported_timestamp_seconds.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
 			// imported again because the Schedule feed's digest has changed
-			strictEqual(scheduleFeedImported?.value, 1, 'schedule_feed_imported_boolean should be 1')
+			ok(
+				scheduleFeedImported?.value >= Math.round(tBeforeImportBar / 1000),
+				'schedule_feed_imported_timestamp_seconds should be larger than tBeforeImportBar',
+			)
 
 			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
 		}
 
 		// modify realtime feed, check matching with BAR_FEED again
+		const tModifyRealtime = Date.now()
 		setRealtimeFeed(encodeFeedMessage(feedMessage1))
 		// todo: trigger & get notified about realtime fetching instead of waiting
 		await new Promise(r => setTimeout(r, 3_000))
@@ -459,10 +467,17 @@ test('importing Schedule feed, matching & serving Realtime feed works', async (t
 			})
 			debugLogMatchingMetrics(metrics)
 
-			const scheduleFeedImported = metrics.schedule_feed_imported_boolean.data
+			const scheduleFeedImported = metrics.schedule_feed_imported_timestamp_seconds.data
 			.find(({labels: l}) => l.feed_name === scheduleFeedName)
 			// not imported again because the Schedule feed's digest hasn't changed
-			strictEqual(scheduleFeedImported?.value, 0, 'schedule_feed_imported_boolean should be 0')
+			ok(
+				scheduleFeedImported?.value >= Math.round(tBeforeImportBar / 1000),
+				'schedule_feed_imported_timestamp_seconds should be larger than tBeforeImportBar',
+			)
+			ok(
+				scheduleFeedImported?.value < Math.round(tModifyRealtime / 1000),
+				'schedule_feed_imported_timestamp_seconds should be smaller than tModifyRealtime',
+			)
 
 			checkTripUpdatesMatchingSuccessesAndFailures(metrics, 'trip_by_suffix_stop_id')
 			checkVehiclePositionsMatchingSuccessesAndFailures(metrics, 'stop_times_by_suffix_stop_id_stop_seq')
